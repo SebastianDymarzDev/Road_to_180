@@ -1,24 +1,62 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
+    <link rel="icon" href="img_small/favicon/favicon.ico">
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="css/buttons.css">
+    <link rel="stylesheet" href="css/menu.css">
+    <link rel="stylesheet" href="css/game.css">
 
     <title>Road to 180</title>
 
+    <script src="js/models/keyboard.class.js"></script>
     <script src="js/models/movable-object.class.js"></script>
+    <script src="js/models/dart.class.js"></script>
     <script src="js/models/character.class.js"></script>
     <script src="js/models/enemy.class.js"></script>
     <script src="js/models/world.class.js"></script>
     <script src="js/game.js"></script>
 </head>
-<body onload="init()">
 
-    <h1>Road to 180</h1>
-    
-    <canvas id="canvas" width="800" height="600"></canvas>
+<body onload="showMenu()">
+
+    <div id="menu">
+        <img id="menu-logo" src="img_small/assets/logo_with_player.webp" alt="Road to 180">
+
+        <div id="menu-buttons">
+            <button class="menu-btn play" onclick="startLevel(1)"><img src="img_small/assets/buttons/play_button.webp"
+                    alt="Spielen"></button>
+            <button class="menu-btn" onclick="showLevelSelect()"><img
+                    src="img_small/assets/buttons/select_level_button.webp" alt="Level wählen"></button>
+            <button class="menu-btn"><img src="img_small/assets/buttons/options_button.webp" alt="Optionen"></button>
+            <button class="menu-btn"><img src="img_small/assets/buttons/credits_button.webp" alt="Credits"></button>
+        </div>
+        <div id="level-select">
+            <div id="level-badges">
+                <button class="level-btn" onclick="startLevel(1)"><img src="img_small/level/level1/level1_badge.webp"
+                        alt="Level 1"></button>
+                <button class="level-btn locked" disabled><img src="img_small/level/level2/level2_badge.webp"
+                        alt="Level 2"></button>
+                <button class="level-btn locked" disabled><img src="img_small/level/level3/level3_badge.webp"
+                        alt="Level 3"></button>
+                <button class="level-btn locked" disabled><img src="img_small/level/level4/level4_badge.webp"
+                        alt="Level 4"></button>
+                <button class="level-btn locked" disabled><img src="img_small/level/level5/level5_badge.webp"
+                        alt="Level 5"></button>
+            </div>
+            <button id="back-btn" onclick="hideLevelSelect()"><img src="img_small/assets/buttons/back_button.webp"
+                    alt="Zurück"></button>
+        </div>
+        <button id="game-back-btn" onclick="leaveGame()"><img src="img_small/assets/buttons/back_button.webp" alt="Zurück"></button>
+        <div id="game">
+            <canvas id="canvas" width="720" height="480"></canvas>
+        </div>
+    </div>
 
 </body>
+
 </html>
