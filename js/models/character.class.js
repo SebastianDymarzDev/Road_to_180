@@ -7,6 +7,13 @@ class Character extends MovableObject {
     idleTick = 0;
     idleSlowdown = 4; // 4 x 125 ms = 500 ms pro Idle-Bild
     throwing = false;
+    maxHealth = 5;
+    health = 5;
+    maxDarts = 5;
+    darts = 0;
+    coins = 0;
+    invulnerableUntil = 0; // bis dahin kein Schaden
+    hurtUntil = 0;         // bis dahin Hit-Animation
     onThrow = null; // wird von World gesetzt
 
     IMAGES_THROW = this.frames("player_throw", "throw", 2);
@@ -14,6 +21,7 @@ class Character extends MovableObject {
     IMAGES_RUN = this.frames("player_run", "run", 4);
     IMAGES_JUMP = this.frames("player_jump", "jump", 4);
     IMAGES_DUCK = this.frames("player_duck", "duck", 2);
+    IMAGES_HIT = this.frames("player_hit", "hit", 2);
 
     constructor(keyboard) {
         super();
@@ -26,6 +34,7 @@ class Character extends MovableObject {
         this.loadImages(this.IMAGES_JUMP);
         this.loadImages(this.IMAGES_DUCK);
         this.loadImages(this.IMAGES_THROW);
+        this.loadImages(this.IMAGES_HIT);
         this.animate();
     }
 
@@ -37,6 +46,34 @@ class Character extends MovableObject {
         return list;
     }
 
+    // Trefferbox der Figur (die Sprites haben viel transparenten Rand)
+    getHitbox() {
+        let h = this.ducking ? 90 : 135;
+        return { x: this.x - 25, y: this.y - 4 - h, w: 50, h: h };
+    }
+
+    takeDamage() {
+        let now = Date.now();
+        if (now < this.invulnerableUntil) return;
+        this.health = Math.max(0, this.health - 1);
+        this.invulnerableUntil = now + 2000; // 2 Sekunden unverwundbar
+        this.hurtUntil = now + 450;
+    }
+
+    // kleiner Hüpfer nach einem Sprung auf einen Gegner
+    bounce() {
+        this.speedY = 8;
+    }
+
+    // blinkt, solange die Figur unverwundbar ist
+    draw(ctx) {
+        let blink = Date.now() < this.invulnerableUntil && Math.floor(Date.now() / 100) % 2 === 0;
+        ctx.save();
+        if (blink) ctx.globalAlpha = 0.4;
+        super.draw(ctx);
+        ctx.restore();
+    }
+
     isInAir() {
         return this.y < Character.GROUND_Y || this.speedY > 0;
     }
@@ -46,7 +83,17 @@ class Character extends MovableObject {
         this.moveInterval = setInterval(() => {
             let k = this.keyboard;
             this.ducking = k.is("DUCK") && !this.isInAir();
-            if (k.is("THROW") && !this.throwing && !this.ducking) this.throwDart();
+            if (k.is("THROW")) {
+                if (!this.throwKeyDown) {
+                    this.throwKeyDown = true; // nur der Tastendruck zählt, nicht das Halten
+                    if (!this.throwing && !this.ducking) {
+                        let strong = k.is("CHARGE") && this.darts >= this.maxDarts;
+                        this.throwDart(strong);
+                    }
+                }
+            } else {
+                this.throwKeyDown = false;
+            }
 
             if (!this.ducking) {
                 if (k.is("RIGHT")) { this.x += this.speed; this.otherDirection = false; }
@@ -70,6 +117,10 @@ class Character extends MovableObject {
         // Animation: 8x pro Sekunde
         this.animInterval = setInterval(() => {
             let k = this.keyboard;
+            if (Date.now() < this.hurtUntil) {
+                this.playAnimation(this.IMAGES_HIT);
+                return;
+            }
             if (this.throwing) return;
             if (this.isInAir()) {
                 this.duckStep = 0;
@@ -92,13 +143,14 @@ class Character extends MovableObject {
         }, 125);
     }
 
-    throwDart() {
+    throwDart(strong) {
         this.throwing = true;
+        if (strong) this.darts = 0;
         this.img = this.imageCache[this.IMAGES_THROW[0]];
         setTimeout(() => {
             this.img = this.imageCache[this.IMAGES_THROW[1]];
             let dir = this.otherDirection ? -1 : 1;
-            if (this.onThrow) this.onThrow(this.x + dir * 45, this.y - 115, this.otherDirection);
+            if (this.onThrow) this.onThrow(this.x + dir * 45, this.y - 115, this.otherDirection, strong);
         }, 150);
         setTimeout(() => (this.throwing = false), 400);
     }

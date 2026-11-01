@@ -3,3 +3,8 @@ body {
     background-color: black;
     overflow: hidden;
 }
+
+@font-face {
+    font-family: "Permanent Marker";
+    src: url("fonts/PermanentMarker-Regular.ttf");
+}
