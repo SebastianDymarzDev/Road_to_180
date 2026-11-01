@@ -16,6 +16,7 @@ class Character extends MovableObject {
     hurtUntil = 0;         // bis dahin Hit-Animation
     dead = false;
     won = false;
+    locked = false;   // gesperrt, z.B. während der Boss-Einblendung
     winStart = 0;
     minX = 40;                          // linke Grenze (in der Boss-Arena enger)
     maxX = World.LEVEL_WIDTH - 40;      // rechte Grenze
@@ -35,7 +36,6 @@ class Character extends MovableObject {
     constructor(keyboard) {
         super();
         this.keyboard = keyboard;
-        this.x = Math.max(this.minX, Math.min(this.maxX, this.x));
         this.y = Character.GROUND_Y;
         this.loadImage(this.IMAGES_IDLE[0]);
         this.loadImages(this.IMAGES_IDLE);
@@ -108,7 +108,7 @@ class Character extends MovableObject {
     animate() {
         // Bewegung + Physik: 60x pro Sekunde
         this.moveInterval = setInterval(() => {
-            let k = this.dead || this.won ? Character.NO_KEYS : this.keyboard;
+            let k = this.dead || this.won || this.locked ? Character.NO_KEYS : this.keyboard;
             this.ducking = k.is("DUCK") && !this.isInAir();
             if (k.is("THROW")) {
                 if (!this.throwKeyDown) {
@@ -126,7 +126,7 @@ class Character extends MovableObject {
                 if (k.is("RIGHT")) { this.x += this.speed; this.otherDirection = false; }
                 if (k.is("LEFT")) { this.x -= this.speed; this.otherDirection = true; }
             }
-            this.x = Math.max(40, Math.min(World.LEVEL_WIDTH - 40, this.x));
+            this.x = Math.max(this.minX, Math.min(this.maxX, this.x));
 
             if (k.is("JUMP") && !this.isInAir() && !this.ducking) {
                 this.speedY = this.jumpPower;
@@ -143,7 +143,7 @@ class Character extends MovableObject {
 
         // Animation: 8x pro Sekunde
         this.animInterval = setInterval(() => {
-            let k = this.dead || this.won ? Character.NO_KEYS : this.keyboard;
+            let k = this.dead || this.won || this.locked ? Character.NO_KEYS : this.keyboard;
             if (this.won) {
                 // jubelt: wechselt alle 400 ms zwischen den beiden Siegbildern
                 let i = Math.floor((Date.now() - this.winStart) / 400) % this.IMAGES_WIN.length;

@@ -6,7 +6,7 @@ class World {
     darts = [];
     items = [];
     enemies = [];
-    mugs = [];
+    projectiles = [];
     arenaActive = false;
     introStart = 0;
     INTRO_TIME = 2000;   // so lange steht der Bossname in der Mitte, danach fängt der Boss an
@@ -35,7 +35,9 @@ class World {
         this.hud = new Hud(this.character);
         this.boss = new Endboss(World.LEVEL_WIDTH - 110, this.config.boss);
         this.boss.onThrow = (x, y) =>
-            this.mugs.push(new BeerMug(x, y, this.character.x, this.character.y - 100, this.boss.projectilePath()));
+            this.projectiles.push(
+                new BossProjectile(x, y, this.character.x, this.character.y - 100, this.boss.projectilePath(), this.config.boss.flight)
+            );
         this.hud.setBoss(this.boss, this.config.boss);
         this.nameImg = new Image();
         this.nameImg.src = `img_small/level/level${level}/level${level}_endboss_name.webp`;
@@ -54,9 +56,9 @@ class World {
             if (this.boss.dead && this.checkWin()) return;
             this.checkArena();
             this.boss.update();
-            this.mugs.forEach((m) => m.move());
-            this.checkMugHits();
-            this.mugs = this.mugs.filter((m) => !m.isGone() && !m.used);
+            this.projectiles.forEach((m) => m.move());
+            this.checkProjectileHits();
+            this.projectiles = this.projectiles.filter((m) => !m.isGone() && !m.used);
             this.enemies.forEach((e) => e.update(this.character));
             this.checkItems();
             this.checkDartHits();
@@ -69,7 +71,7 @@ class World {
                 img.src = src;
                 return img;
             });
-            this.layers.push({ imgs: imgs, y: layer.y, speed: layer.speed });
+            this.layers.push({ imgs: imgs, y: layer.y, speed: layer.speed, dys: layer.dys || [] });
         });
         this.draw();
     }
@@ -104,18 +106,20 @@ class World {
             this.character.minX = this.cameraX + 40;    // kein Zurück mehr
             this.character.maxX = this.boss.x - 160;    // nicht in den Boss laufen
             this.enemies = [];                          // normale Gegner verschwinden
+            this.character.locked = true;               // keine Steuerung während der Boss-Einblendung
         }
         if (this.arenaActive && !this.boss.active && !this.boss.dead && now - this.introStart > this.INTRO_TIME) {
             this.boss.start();
+            this.character.locked = false;
         }
     }
 
-    checkMugHits() {
+    checkProjectileHits() {
         let box = this.character.getHitbox();
-        this.mugs.forEach((mug) => {
-            if (mug.used || !this.overlaps(box, mug.getHitbox())) return;
+        this.projectiles.forEach((projectile) => {
+            if (projectile.used || !this.overlaps(box, projectile.getHitbox())) return;
             this.character.takeDamage();
-            mug.used = true;
+            projectile.used = true;
         });
     }
 
@@ -146,7 +150,7 @@ class World {
     checkWin() {
         if (!this.character.won) {
             this.character.win();
-            this.mugs = [];
+            this.projectiles = [];
         }
         let pressed = this.keyboard.wasPressed("RESTART"); // immer abfragen, damit alte Tastendrücke verfallen
         if (!this.winVisible()) return false;
@@ -317,7 +321,7 @@ class World {
             let img = layer.imgs[n % layer.imgs.length];
             if (!img.complete) continue;
             let x = Math.round(n * 720 - offset);
-            this.ctx.drawImage(img, x, layer.y, 720, 480);
+            this.ctx.drawImage(img, x, layer.y + (layer.dys[n % layer.imgs.length] || 0), 720, 480);
         }
     }
 
@@ -338,7 +342,7 @@ class World {
         if (this.boss.x > this.cameraX - 150 && this.boss.x < this.cameraX + 870) this.boss.draw(this.ctx);
         this.character.draw(this.ctx);
         this.darts.forEach((d) => d.draw(this.ctx));
-        this.mugs.forEach((m) => m.draw(this.ctx));
+        this.projectiles.forEach((m) => m.draw(this.ctx));
         this.ctx.restore();
         this.hud.draw(this.ctx);
         this.drawIntro();

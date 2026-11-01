@@ -28,7 +28,7 @@ class Hud extends MovableObject {
     frames(name, count) {
         let list = [];
         for (let i = 1; i <= count; i++) {
-            list.push(`img_small/assets/bars/${name}_0${i}.webp`);
+            list.push(`img_small/assets/bars/${name}_${String(i).padStart(2, "0")}.webp`);
         }
         return list;
     }

@@ -1,50 +1,7 @@
-// Wurfgeschoss des Endbosses (Bierkrug usw.). Fliegt im Bogen genau dorthin, wo die Figur beim Wurf stand.
-class BeerMug extends MovableObject {
-    gravity = 0.35;
-    angle = 0;
-    used = false;
-
-    constructor(x, y, targetX, targetY, imagePath) {
-        super();
-        this.loadImage(imagePath);
-        this.x = x;
-        this.y = y;
-        // Flugzeit T so berechnen, dass der Krug nach einem Bogen im Zielpunkt ankommt
-        let startSpeedY = -8;
-        let drop = targetY - y;
-        let T = (-startSpeedY + Math.sqrt(Math.max(0, startSpeedY * startSpeedY + 2 * this.gravity * drop))) / this.gravity;
-        this.speedX = (targetX - x) / T;
-        this.speedY = startSpeedY;
-    }
-
-    move() {
-        this.x += this.speedX;
-        this.speedY += this.gravity;
-        this.y += this.speedY;
-        this.angle -= 0.25; // dreht sich im Flug
-    }
-
-    isGone() {
-        return this.y > Character.GROUND_Y + 20;
-    }
-
-    getHitbox() {
-        return { x: this.x - 22, y: this.y - 18, w: 44, h: 36 };
-    }
-
-    draw(ctx) {
-        if (!this.img || !this.img.complete) return;
-        ctx.save();
-        ctx.translate(this.x, this.y);
-        ctx.rotate(this.angle);
-        ctx.drawImage(this.img, -this.img.naturalWidth / 2, -this.img.naturalHeight / 2);
-        ctx.restore();
-    }
-}
-
 class Endboss extends MovableObject {
     angryBelow = 2;          // ab so wenigen Leben wird er wütend (wirft schneller)
     throwPause = 2500;       // ms zwischen zwei Würfen
+    idleFrameTime = 700;     // ms pro Bild in der Ruhe-Animation (größer = langsamer)
     angryThrowPause = 1500;  // ms zwischen zwei Würfen, wenn er wütend ist
     active = false;          // wirft erst, wenn die Arena gestartet ist
     dead = false;
@@ -61,6 +18,10 @@ class Endboss extends MovableObject {
         this.scale = cfg.scale;
         this.maxHealth = cfg.health;
         this.health = cfg.health;
+        this.angryBelow = cfg.angryBelow || 2;
+        this.angryAt = cfg.angryAt || [this.angryBelow];
+        this.pauses = cfg.pauses || [this.throwPause, this.angryThrowPause];
+        this.angryFrames = cfg.angryFrames || [];
         this.x = x;
         this.y = Character.GROUND_Y;
         this.IMAGES_IDLE = this.paths("idle", "idle", cfg.frames.idle);
@@ -86,8 +47,13 @@ class Endboss extends MovableObject {
         return `img_small/character/enemies/endboss/${this.cfg.folder}/projectile/${this.cfg.projectile}.webp`;
     }
 
+    // 0 = ruhig, 1 = wütend, 2 = sehr wütend (je nach Leben)
+    phase() {
+        return this.angryAt.filter((h) => this.health <= h).length;
+    }
+
     isAngry() {
-        return this.health <= this.angryBelow;
+        return this.phase() > 0;
     }
 
     start() {
@@ -124,7 +90,7 @@ class Endboss extends MovableObject {
                 this.thrown = true;
                 if (this.onThrow) this.onThrow(this.x - this.cfg.hand.x * this.scale, this.y - this.cfg.hand.y * this.scale);
             }
-            if (elapsed >= 450) this.endState(this.isAngry() ? this.angryThrowPause : this.throwPause);
+            if (elapsed >= 450) this.endState(this.pauses[Math.min(this.phase(), this.pauses.length - 1)]);
         } else if (this.state === "hit" && elapsed >= 450) {
             this.endState(1000);
         }
@@ -153,8 +119,13 @@ class Endboss extends MovableObject {
         } else if (this.state === "die") {
             path = this.IMAGES_DIE[Math.min(this.IMAGES_DIE.length - 1, Math.floor(elapsed / 250))];
         } else {
-            let list = this.isAngry() ? this.IMAGES_ANGRY : this.IMAGES_IDLE;
-            path = list[Math.floor(now / 400) % list.length];
+            let list = this.IMAGES_IDLE;
+            if (this.isAngry()) {
+                list = this.IMAGES_ANGRY;
+                let wanted = this.angryFrames[this.phase() - 1];
+                if (wanted) list = wanted.map((i) => this.IMAGES_ANGRY[i]);
+            }
+            path = list[Math.floor(now / this.idleFrameTime) % list.length];
         }
         return this.imageCache[path];
     }

@@ -41,6 +41,11 @@ PLAYER_MULT = {
 
 FRAME_MULT = {
     "lose_02": 0.58,   # kniende Pose war viel zu groß
+    "district_boss_die_04": 0.8,   # liegende Pose war zu groß
+    "state_boss_die_04": 0.7,   # liegende Pose war zu groß
+    "world_boss_die_04": 0.75,   # liegende Pose war zu groß
+    "180_boss_idle_02": 0.8,   # war größer gezeichnet als die anderen Bilder
+    "180_boss_idle_03": 0.8,
 }
 
 # Feinkorrektur pro Boss und Animation (1.0 = unveraendert).
@@ -51,7 +56,7 @@ BOSS_MULT = {
     "level2": {"idle": 1.0, "angry": 1.0, "throw": 1.0, "hit": 1.0, "die": 1.0},
     "level3": {"idle": 1.0, "angry": 1.0, "throw": 1.0, "hit": 1.0, "die": 1.0},
     "level4": {"idle": 1.0, "angry": 1.0, "throw": 1.0, "hit": 1.0, "die": 1.0},
-    "level5": {"idle": 1.2, "angry": 1.25, "throw": 0.95, "hit": 1.3, "die": 1.25},
+    "level5": {"idle": 1.5, "angry": 1.56, "throw": 1.19, "hit": 1.63, "die": 1.56},
 }
 
 # ---- Alles andere: laengste Seite in px (nie hochskalieren) ----
@@ -196,7 +201,7 @@ def main():
     for lvl, files in sorted(bosses.items()):
         process_character(
             files, BOSS_CANVAS_H,
-            lambda f, lvl=lvl: BOSS_MULT.get(lvl, {}).get(f.parent.name, 1.0),
+            lambda f, lvl=lvl: BOSS_MULT.get(lvl, {}).get(f.parent.name, 1.0) * FRAME_MULT.get(f.stem, 1.0),
             f"Boss {lvl}", f"_preview_boss_{lvl}.png")
 
     for p in pngs:
