@@ -14,6 +14,13 @@ class Character extends MovableObject {
     coins = 0;
     invulnerableUntil = 0; // bis dahin kein Schaden
     hurtUntil = 0;         // bis dahin Hit-Animation
+    dead = false;
+    won = false;
+    winStart = 0;
+    minX = 40;                          // linke Grenze (in der Boss-Arena enger)
+    maxX = World.LEVEL_WIDTH - 40;      // rechte Grenze
+    deathStart = 0;
+    static NO_KEYS = { is: () => false }; // Tastatur, wenn die Figur tot ist
     onThrow = null; // wird von World gesetzt
 
     IMAGES_THROW = this.frames("player_throw", "throw", 2);
@@ -22,11 +29,13 @@ class Character extends MovableObject {
     IMAGES_JUMP = this.frames("player_jump", "jump", 4);
     IMAGES_DUCK = this.frames("player_duck", "duck", 2);
     IMAGES_HIT = this.frames("player_hit", "hit", 2);
+    IMAGES_DIE = this.frames("player_die", "lose", 2);
+    IMAGES_WIN = this.frames("player_win", "win", 2);
 
     constructor(keyboard) {
         super();
         this.keyboard = keyboard;
-        this.x = 120;
+        this.x = Math.max(this.minX, Math.min(this.maxX, this.x));
         this.y = Character.GROUND_Y;
         this.loadImage(this.IMAGES_IDLE[0]);
         this.loadImages(this.IMAGES_IDLE);
@@ -35,6 +44,8 @@ class Character extends MovableObject {
         this.loadImages(this.IMAGES_DUCK);
         this.loadImages(this.IMAGES_THROW);
         this.loadImages(this.IMAGES_HIT);
+        this.loadImages(this.IMAGES_DIE);
+        this.loadImages(this.IMAGES_WIN);
         this.animate();
     }
 
@@ -53,11 +64,27 @@ class Character extends MovableObject {
     }
 
     takeDamage() {
+        if (this.dead || this.won) return;
         let now = Date.now();
         if (now < this.invulnerableUntil) return;
         this.health = Math.max(0, this.health - 1);
-        this.invulnerableUntil = now + 2000; // 2 Sekunden unverwundbar
+        this.invulnerableUntil = now + 1000; // 1,0 Sekunden unverwundbar
         this.hurtUntil = now + 450;
+        if (this.health === 0) this.die();
+    }
+
+    win() {
+        this.won = true;
+        this.winStart = Date.now();
+        this.invulnerableUntil = 0;
+        this.hurtUntil = 0;
+    }
+
+    die() {
+        this.dead = true;
+        this.deathStart = Date.now();
+        this.invulnerableUntil = 0; // kein Blinken mehr
+        this.hurtUntil = 0;
     }
 
     // kleiner Hüpfer nach einem Sprung auf einen Gegner
@@ -81,7 +108,7 @@ class Character extends MovableObject {
     animate() {
         // Bewegung + Physik: 60x pro Sekunde
         this.moveInterval = setInterval(() => {
-            let k = this.keyboard;
+            let k = this.dead || this.won ? Character.NO_KEYS : this.keyboard;
             this.ducking = k.is("DUCK") && !this.isInAir();
             if (k.is("THROW")) {
                 if (!this.throwKeyDown) {
@@ -116,7 +143,19 @@ class Character extends MovableObject {
 
         // Animation: 8x pro Sekunde
         this.animInterval = setInterval(() => {
-            let k = this.keyboard;
+            let k = this.dead || this.won ? Character.NO_KEYS : this.keyboard;
+            if (this.won) {
+                // jubelt: wechselt alle 400 ms zwischen den beiden Siegbildern
+                let i = Math.floor((Date.now() - this.winStart) / 400) % this.IMAGES_WIN.length;
+                this.img = this.imageCache[this.IMAGES_WIN[i]];
+                return;
+            }
+            if (this.dead) {
+                // erst stehend (lose_01), dann liegend (lose_02), bleibt liegen
+                let i = Math.min(this.IMAGES_DIE.length - 1, Math.floor((Date.now() - this.deathStart) / 400));
+                this.img = this.imageCache[this.IMAGES_DIE[i]];
+                return;
+            }
             if (Date.now() < this.hurtUntil) {
                 this.playAnimation(this.IMAGES_HIT);
                 return;
@@ -148,6 +187,7 @@ class Character extends MovableObject {
         if (strong) this.darts = 0;
         this.img = this.imageCache[this.IMAGES_THROW[0]];
         setTimeout(() => {
+            if (this.dead || this.won) return;
             this.img = this.imageCache[this.IMAGES_THROW[1]];
             let dir = this.otherDirection ? -1 : 1;
             if (this.onThrow) this.onThrow(this.x + dir * 45, this.y - 115, this.otherDirection, strong);

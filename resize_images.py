@@ -39,11 +39,15 @@ PLAYER_MULT = {
     "player_win": 1.2,
 }
 
+FRAME_MULT = {
+    "lose_02": 0.58,   # kniende Pose war viel zu groß
+}
+
 # Feinkorrektur pro Boss und Animation (1.0 = unveraendert).
 # Nur level5/idle ist nach Augenmass gesetzt (Stichprobe), der Rest ist 1.0.
 # Im Vorschaubild img_small/_preview_boss_levelN.png pruefen und hier nachstellen.
 BOSS_MULT = {
-    "level1": {"idle": 1.0, "angry": 1.0, "throw": 0.85, "hit": 1.0, "die": 1.0},
+    "level1": {"idle": 1.1, "angry": 1.1, "throw": 0.94, "hit": 1.1, "die": 1.1},
     "level2": {"idle": 1.0, "angry": 1.0, "throw": 1.0, "hit": 1.0, "die": 1.0},
     "level3": {"idle": 1.0, "angry": 1.0, "throw": 1.0, "hit": 1.0, "die": 1.0},
     "level4": {"idle": 1.0, "angry": 1.0, "throw": 1.0, "hit": 1.0, "die": 1.0},
@@ -187,7 +191,7 @@ def main():
     if player:
         process_character(
             player, PLAYER_CANVAS_H,
-            lambda f: PLAYER_MULT.get(f.parent.name, 1.0),
+            lambda f: PLAYER_MULT.get(f.parent.name, 1.0) * FRAME_MULT.get(f.stem, 1.0),
             "Spieler", "_preview_player.png")
     for lvl, files in sorted(bosses.items()):
         process_character(

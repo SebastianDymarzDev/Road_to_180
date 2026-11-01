@@ -1,5 +1,6 @@
 class Hud extends MovableObject {
     static SCALE = 0.45; // Größe der Leisten (Originale sind 360x120 px)
+    static BOSS_SCALE = 0.65; // Größe der Boss-Lebensleiste
     static X = 6;        // linker Rand
     static Y = 2;        // oberer Rand der Healthbar
     static GAP = 2;      // sichtbarer Abstand zwischen den Leisten (px)
@@ -17,6 +18,13 @@ class Hud extends MovableObject {
         document.fonts.load(Hud.FONT); // Schrift schon vor dem ersten Zeichnen laden
     }
 
+    // Boss und seine Lebensleiste (Bilder kommen aus levels.js)
+    setBoss(boss, cfg) {
+        this.boss = boss;
+        this.IMAGES_BOSS = this.frames(cfg.bar, cfg.barCount);
+        this.loadImages(this.IMAGES_BOSS);
+    }
+
     frames(name, count) {
         let list = [];
         for (let i = 1; i <= count; i++) {
@@ -25,10 +33,10 @@ class Hud extends MovableObject {
         return list;
     }
 
-    drawImage(ctx, path, x, y) {
+    drawImage(ctx, path, x, y, scale = Hud.SCALE) {
         let img = this.imageCache[path];
         if (!img || !img.complete) return;
-        ctx.drawImage(img, x, y, img.naturalWidth * Hud.SCALE, img.naturalHeight * Hud.SCALE);
+        ctx.drawImage(img, x, y, img.naturalWidth * scale, img.naturalHeight * scale);
     }
 
     draw(ctx) {
@@ -44,6 +52,12 @@ class Hud extends MovableObject {
         // dartbar_01 = leer (0), dartbar_06 = voll (5)
         this.drawImage(ctx, this.IMAGES_DARTS[c.darts], Hud.X, dartY);
         this.drawImage(ctx, this.COIN_FRAME, Hud.X, coinY);
+        if (this.boss && this.bossBarVisible && this.IMAGES_BOSS) {
+            // boss_healthbar_01 = voll (5), _06 = leer (0), oben in der Mitte
+            let bs = Hud.BOSS_SCALE;
+            let x = (720 - 360 * bs) / 2;
+            this.drawImage(ctx, this.IMAGES_BOSS[this.boss.maxHealth - this.boss.health], x, healthY, bs);
+        }
         this.drawCoins(ctx, c.coins, Hud.X + 106 * s, coinY + 44 * s);
     }
 
