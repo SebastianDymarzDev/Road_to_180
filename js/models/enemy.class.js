@@ -7,11 +7,7 @@ class Enemy extends MovableObject {
     dieStart = 0;
 
     static paths(folder, name, count) {
-        let list = [];
-        for (let i = 1; i <= count; i++) {
-            list.push(`img_small/character/enemies/${folder}/${name}_0${i}.webp`);
-        }
-        return list;
+        return MovableObject.framePaths(`img_small/character/enemies/${folder}`, name, count);
     }
 
     update(character) {
@@ -38,8 +34,7 @@ class Enemy extends MovableObject {
     }
 
     dieFrame(images, ms) {
-        let i = Math.min(images.length - 1, Math.floor((Date.now() - this.dieStart) / ms));
-        return images[i];
+        return this.frameOnce(images, Date.now() - this.dieStart, ms);
     }
 }
 
@@ -75,8 +70,7 @@ class Dartboard extends Enemy {
     draw(ctx) {
         if (this.dying) {
             let list = this.dieKind === "top" ? this.DIE_TOP : this.DIE_FRONT;
-            let img = this.imageCache[this.dieFrame(list, 120)];
-            if (img.complete) ctx.drawImage(img, this.x - img.naturalWidth / 2, this.y - img.naturalHeight);
+            super.draw(ctx, this.imageCache[this.dieFrame(list, 120)]);
             return;
         }
         if (!this.img.complete) return;
@@ -118,13 +112,8 @@ class FlyingArrow extends Enemy {
     }
 
     draw(ctx) {
-        let path = this.dying ? this.dieFrame(this.DIE, 130) : this.FLY[Math.floor(Date.now() / 120) % 2];
-        let img = this.imageCache[path];
-        if (!img.complete) return;
-        ctx.save();
-        ctx.translate(this.x, this.y);
-        ctx.scale(-1, 1); // das Bild zeigt nach rechts, der Pfeil fliegt aber nach links
-        ctx.drawImage(img, -img.naturalWidth / 2, -img.naturalHeight / 2);
-        ctx.restore();
+        let path = this.dying ? this.dieFrame(this.DIE, 130) : this.frameLoop(this.FLY, Date.now(), 120);
+        // das Bild zeigt nach rechts, der Pfeil fliegt aber nach links
+        this.drawCentered(ctx, this.imageCache[path], { flip: true });
     }
-}
+}

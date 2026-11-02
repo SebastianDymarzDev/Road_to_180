@@ -21,6 +21,8 @@ class World {
     ENEMY_TOTAL_MAX = 40;
     cameraX = 0;
     running = true;
+    startTime = Date.now();
+    LOGO_TIME = 3000;    // so lange ist das Level-Logo zu sehen (mit Ein- und Ausblenden)
 
     constructor(canvas, keyboard, level = 1) {
         this.level = level;
@@ -28,90 +30,121 @@ class World {
         this.canvas = canvas;
         this.ctx = canvas.getContext("2d");
         this.keyboard = keyboard;
-        this.loseImg = new Image();
-        this.loseImg.src = "img_small/assets/lose.webp";
-        document.fonts.load('28px "Permanent Marker"');
-        this.character = new Character(keyboard);
-        this.hud = new Hud(this.character);
-        this.boss = new Endboss(World.LEVEL_WIDTH - 110, this.config.boss);
-        this.boss.onThrow = (x, y) =>
-            this.projectiles.push(
-                new BossProjectile(x, y, this.character.x, this.character.y - 100, this.boss.projectilePath(), this.config.boss.flight)
-            );
-        this.hud.setBoss(this.boss, this.config.boss);
-        this.nameImg = new Image();
-        this.nameImg.src = `img_small/level/level${level}/level${level}_endboss_name.webp`;
-        this.winImg = new Image();
-        this.winImg.src = "img_small/assets/win.webp";
+        this.loadOverlayImages();
+        this.createActors();
         this.placeItems();
         this.placeEnemies();
-        this.character.onThrow = (x, y, left, strong) => this.darts.push(new Dart(x, y, left, strong));
-        this.updateInterval = setInterval(() => {
-            this.darts.forEach((d) => d.move());
-            this.darts = this.darts.filter((d) => !d.isGone() && !d.used);
-            if (this.character.dead) {
-                this.checkRestart(); // Gegner und Items stehen still
-                return;
-            }
-            if (this.boss.dead && this.checkWin()) return;
-            this.checkArena();
-            this.boss.update();
-            this.projectiles.forEach((m) => m.move());
-            this.checkProjectileHits();
-            this.projectiles = this.projectiles.filter((m) => !m.isGone() && !m.used);
-            this.enemies.forEach((e) => e.update(this.character));
-            this.checkItems();
-            this.checkDartHits();
-            this.checkEnemyContact();
-            this.enemies = this.enemies.filter((e) => !e.removable);
-        }, 1000 / 60);
-        this.config.background.forEach((layer) => {
-            let imgs = layer.sources.map((src) => {
-                let img = new Image();
-                img.src = src;
-                return img;
-            });
-            this.layers.push({ imgs: imgs, y: layer.y, speed: layer.speed, dys: layer.dys || [] });
-        });
+        this.updateInterval = setInterval(() => this.update(), 1000 / 60);
+        this.createLayers();
         this.draw();
     }
 
+    loadOverlayImages() {
+        this.loseImg = MovableObject.newImage("img_small/assets/lose.webp");
+        this.nameImg = MovableObject.newImage(`img_small/level/level${this.level}/level${this.level}_endboss_name.webp`);
+        this.winImg = MovableObject.newImage("img_small/assets/win.webp");
+        this.logoImg = MovableObject.newImage(`img_small/level/level${this.level}/level${this.level}_logo.webp`);
+        document.fonts.load('28px "Permanent Marker"');
+    }
+
+    createActors() {
+        let bossConfig = this.config.boss;
+        this.character = new Character(this.keyboard);
+        this.hud = new Hud(this.character);
+        this.boss = new Endboss(World.LEVEL_WIDTH - 110, bossConfig);
+        this.boss.onThrow = (x, y) => this.projectiles.push(this.newProjectile(x, y));
+        this.character.locked = true; // steht still, solange das Level-Logo zu sehen ist
+        this.hud.setBoss(this.boss, bossConfig);
+        this.character.onThrow = (x, y, left, strong) => this.darts.push(new Dart(x, y, left, strong));
+    }
+
+    newProjectile(x, y) {
+        let c = this.character;
+        return new BossProjectile(x, y, c.x, c.y - 100, this.boss.projectilePath(), this.config.boss.flight);
+    }
+
+    createLayers() {
+        this.config.background.forEach((layer) => {
+            let imgs = layer.sources.map((src) => MovableObject.newImage(src));
+            this.layers.push({ imgs: imgs, y: layer.y, speed: layer.speed, dys: layer.dys || [] });
+        });
+    }
+
+    update() {
+        this.updateDarts();
+        if (this.character.dead) return this.checkRestart(); // Gegner und Items stehen still
+        if (this.boss.dead && this.checkWin()) return;
+        this.checkLogo();
+        this.checkArena();
+        this.boss.update();
+        this.updateProjectiles();
+        this.enemies.forEach((e) => e.update(this.character));
+        this.checkItems();
+        this.checkDartHits();
+        this.checkEnemyContact();
+        this.enemies = this.enemies.filter((e) => !e.removable);
+    }
+
+    updateDarts() {
+        this.darts.forEach((d) => d.move());
+        this.darts = this.darts.filter((d) => !d.isGone() && !d.used);
+    }
+
+    updateProjectiles() {
+        this.projectiles.forEach((m) => m.move());
+        this.checkProjectileHits();
+        this.projectiles = this.projectiles.filter((m) => !m.isGone() && !m.used);
+    }
+
+    // zufälliges x mit Abstand zu den Objekten in list (höchstens 50 Versuche)
+    freeX(minX, maxX, list, gap) {
+        let x;
+        let tries = 0;
+        do {
+            x = minX + Math.random() * (maxX - minX);
+            tries++;
+        } while (tries < 50 && list.some((o) => Math.abs(o.x - x) < gap));
+        return x;
+    }
+
     placeItems() {
-        let minX = 300;
-        let lowY = Character.GROUND_Y - 30;   // Bodenhöhe
-        let highY = Character.GROUND_Y - 250; // mit Sprung erreichbar
         for (let type in this.ITEM_COUNT) {
             // Münzen liegen nicht in der Boss-Arena (letzter Bildschirm)
             let maxX = type === "coin" ? World.LEVEL_WIDTH - 720 : World.LEVEL_WIDTH - 150;
-            for (let i = 0; i < this.ITEM_COUNT[type]; i++) {
-                let x, y;
-                let tries = 0;
-                do {
-                    x = minX + Math.random() * (maxX - minX);
-                    y = lowY - Math.random() * (lowY - highY);
-                    tries++;
-                } while (tries < 50 && this.items.some((it) => Math.abs(it.x - x) < 70));
-                this.items.push(new Item(type, x, y));
-            }
+            for (let i = 0; i < this.ITEM_COUNT[type]; i++) this.items.push(this.newItem(type, maxX));
         }
+    }
+
+    newItem(type, maxX) {
+        let lowY = Character.GROUND_Y - 30;   // Bodenhöhe
+        let highY = Character.GROUND_Y - 250; // mit Sprung erreichbar
+        let x = this.freeX(300, maxX, this.items, 70);
+        return new Item(type, x, lowY - Math.random() * (lowY - highY));
+    }
+
+    checkLogo() {
+        let logoOver = Date.now() - this.startTime > this.LOGO_TIME;
+        if (logoOver && !this.arenaActive) this.character.locked = false;
     }
 
     // Am Levelende (Kamera ganz rechts) beginnt der Bosskampf
     checkArena() {
         let now = Date.now();
-        if (!this.arenaActive && this.cameraX >= World.LEVEL_WIDTH - this.canvas.width) {
-            this.arenaActive = true;
-            this.introStart = now;
-            this.hud.bossBarVisible = true;
-            this.character.minX = this.cameraX + 40;    // kein Zurück mehr
-            this.character.maxX = this.boss.x - 160;    // nicht in den Boss laufen
-            this.enemies = [];                          // normale Gegner verschwinden
-            this.character.locked = true;               // keine Steuerung während der Boss-Einblendung
-        }
+        if (!this.arenaActive && this.cameraX >= World.LEVEL_WIDTH - this.canvas.width) this.startArena(now);
         if (this.arenaActive && !this.boss.active && !this.boss.dead && now - this.introStart > this.INTRO_TIME) {
             this.boss.start();
             this.character.locked = false;
         }
+    }
+
+    startArena(now) {
+        this.arenaActive = true;
+        this.introStart = now;
+        this.hud.bossBarVisible = true;
+        this.character.minX = this.cameraX + 40;    // kein Zurück mehr
+        this.character.maxX = this.boss.x - 160;    // nicht in den Boss laufen
+        this.enemies = [];                          // normale Gegner verschwinden
+        this.character.locked = true;               // keine Steuerung während der Boss-Einblendung
     }
 
     checkProjectileHits() {
@@ -123,46 +156,68 @@ class World {
         });
     }
 
+    // Level-Logo groß in der Mitte: blendet ein, bleibt stehen und blendet wieder aus
+    drawLevelLogo() {
+        let t = Date.now() - this.startTime;
+        if (t > this.LOGO_TIME || !this.logoImg.complete) return;
+        let w = 480;
+        let h = (w * this.logoImg.naturalHeight) / this.logoImg.naturalWidth;
+        this.ctx.save();
+        this.ctx.globalAlpha = Math.min(1, t / 500, (this.LOGO_TIME - t) / 500);
+        this.ctx.drawImage(this.logoImg, (this.canvas.width - w) / 2, 90, w, h);
+        this.ctx.restore();
+    }
+
     // Der Bossname blendet in der Mitte ein und wandert dann nach oben rechts
     drawIntro() {
         if (!this.arenaActive || !this.nameImg.complete) return;
         let t = Date.now() - this.introStart;
-        let img = this.nameImg;
-        let w0 = 320;
-        let h0 = (w0 * img.naturalHeight) / img.naturalWidth;
-        let x0 = (this.canvas.width - w0) / 2;
-        let y0 = 150;
-        let w1 = img.naturalWidth * this.NAME_SCALE;
-        let h1 = img.naturalHeight * this.NAME_SCALE;
-        let x1 = this.canvas.width - w1 - 6;
-        let y1 = Hud.Y;
         let k = Math.min(1, Math.max(0, (t - this.INTRO_TIME) / this.NAME_FLY_TIME));
         k = k * k * (3 - 2 * k); // weicher Start und Stopp
-        let ctx = this.ctx;
-        ctx.save();
-        ctx.globalAlpha = Math.min(1, t / 300);
-        ctx.drawImage(img, x0 + (x1 - x0) * k, y0 + (y1 - y0) * k, w0 + (w1 - w0) * k, h0 + (h1 - h0) * k);
-        ctx.restore();
+        let a = this.nameStart();
+        let b = this.nameEnd();
+        let mix = (from, to) => from + (to - from) * k;
+        this.ctx.save();
+        this.ctx.globalAlpha = Math.min(1, t / 300);
+        this.ctx.drawImage(this.nameImg, mix(a.x, b.x), mix(a.y, b.y), mix(a.w, b.w), mix(a.h, b.h));
+        this.ctx.restore();
+    }
+
+    // Name in der Mitte (320 px breit)
+    nameStart() {
+        let w = 320;
+        return { x: (this.canvas.width - w) / 2, y: 150, w: w, h: (w * this.nameImg.naturalHeight) / this.nameImg.naturalWidth };
+    }
+
+    // Name oben rechts
+    nameEnd() {
+        let w = this.nameImg.naturalWidth * this.NAME_SCALE;
+        return { x: this.canvas.width - w - 6, y: Hud.Y, w: w, h: this.nameImg.naturalHeight * this.NAME_SCALE };
     }
 
     // Boss besiegt: Figur jubelt, nach 2 Sekunden erscheint das Sieg-Bild.
     // Gibt true zurück, wenn gerade ein anderes Level oder das Menü gestartet wurde.
     checkWin() {
-        if (!this.character.won) {
-            this.character.win();
-            this.projectiles = [];
-            Sound.play(LEVELS[this.level + 1] ? "win" : "badge");
-        }
+        if (!this.character.won) this.startWin();
         let pressed = this.keyboard.wasPressed("RESTART"); // immer abfragen, damit alte Tastendrücke verfallen
         if (!this.winVisible()) return false;
-        if (!this.progressSaved) {
-            this.progressSaved = true;
-            unlockLevel(this.level + 1);
-        }
+        this.saveProgress();
         if (!pressed) return false;
         if (LEVELS[this.level + 1]) startLevel(this.level + 1);
         else leaveGame();
         return true;
+    }
+
+    startWin() {
+        this.character.win();
+        this.projectiles = [];
+        Sound.play(LEVELS[this.level + 1] ? "win" : "badge");
+    }
+
+    saveProgress() {
+        if (this.progressSaved) return;
+        this.progressSaved = true;
+        unlockLevel(this.level + 1);
     }
 
     winVisible() {
@@ -171,16 +226,25 @@ class World {
 
     drawWin() {
         if (!this.winVisible() || !this.winImg.complete) return;
+        let text = LEVELS[this.level + 1] ? `ENTER = Level ${this.level + 1}` : "ENTER = Menü";
+        this.drawOverlay(this.winImg, Date.now() - this.boss.stateStart - 2000, text);
+    }
+
+    // dunkler Schleier, Bild und Text; blendet über 500 ms ein
+    drawOverlay(img, since, text) {
         let ctx = this.ctx;
-        let t = Date.now() - this.boss.stateStart - 2000;
+        let w = 440;
         ctx.save();
-        ctx.globalAlpha = Math.min(1, t / 500); // blendet weich ein
+        ctx.globalAlpha = Math.min(1, since / 500);
         ctx.fillStyle = "rgba(0, 0, 0, 0.45)";
         ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
-        let w = 440;
-        let h = (w * this.winImg.naturalHeight) / this.winImg.naturalWidth;
-        ctx.drawImage(this.winImg, (this.canvas.width - w) / 2, 70, w, h);
-        let text = LEVELS[this.level + 1] ? `ENTER = Level ${this.level + 1}` : "ENTER = Menü";
+        ctx.drawImage(img, (this.canvas.width - w) / 2, 70, w, (w * img.naturalHeight) / img.naturalWidth);
+        this.drawOverlayText(text);
+        ctx.restore();
+    }
+
+    drawOverlayText(text) {
+        let ctx = this.ctx;
         ctx.font = '28px "Permanent Marker"';
         ctx.textAlign = "center";
         ctx.lineWidth = 5;
@@ -188,7 +252,6 @@ class World {
         ctx.strokeText(text, this.canvas.width / 2, 340);
         ctx.fillStyle = "#ffd23c";
         ctx.fillText(text, this.canvas.width / 2, 340);
-        ctx.restore();
     }
 
     // Das Game-Over-Bild erscheint 1,5 Sekunden nach dem Tod
@@ -203,23 +266,7 @@ class World {
 
     drawLose() {
         if (!this.loseVisible() || !this.loseImg.complete) return;
-        let ctx = this.ctx;
-        let t = Date.now() - this.character.deathStart - 1500;
-        ctx.save();
-        ctx.globalAlpha = Math.min(1, t / 500); // blendet weich ein
-        ctx.fillStyle = "rgba(0, 0, 0, 0.45)";
-        ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
-        let w = 440;
-        let h = (w * this.loseImg.naturalHeight) / this.loseImg.naturalWidth;
-        ctx.drawImage(this.loseImg, (this.canvas.width - w) / 2, 70, w, h);
-        ctx.font = '28px "Permanent Marker"';
-        ctx.textAlign = "center";
-        ctx.lineWidth = 5;
-        ctx.strokeStyle = "black";
-        ctx.strokeText("ENTER = Neustart", this.canvas.width / 2, 340);
-        ctx.fillStyle = "#ffd23c";
-        ctx.fillText("ENTER = Neustart", this.canvas.width / 2, 340);
-        ctx.restore();
+        this.drawOverlay(this.loseImg, Date.now() - this.character.deathStart - 1500, "ENTER = Neustart");
     }
 
     randomInt(min, max) {
@@ -229,24 +276,16 @@ class World {
     placeEnemies() {
         let boards = this.randomInt(this.ENEMY_MIN, this.ENEMY_MAX);
         let arrows = this.randomInt(this.ENEMY_MIN, Math.min(this.ENEMY_MAX, this.ENEMY_TOTAL_MAX - boards));
-        let minX = 900; // nicht direkt am Start
-        let maxX = World.LEVEL_WIDTH - 1000;
+        for (let i = 0; i < boards + arrows; i++) {
+            let x = this.freeX(900, World.LEVEL_WIDTH - 1000, this.enemies, 200); // nicht direkt am Start
+            this.enemies.push(i < boards ? new Dartboard(x) : this.newArrow(x));
+        }
+    }
+
+    newArrow(x) {
         let lowY = Character.GROUND_Y - 30;   // tief: darüber springen
         let highY = Character.GROUND_Y - 125; // hoch: drunter wegducken
-        let total = boards + arrows;
-        for (let i = 0; i < total; i++) {
-            let x;
-            let tries = 0;
-            do {
-                x = minX + Math.random() * (maxX - minX);
-                tries++;
-            } while (tries < 50 && this.enemies.some((e) => Math.abs(e.x - x) < 200));
-            if (i < boards) {
-                this.enemies.push(new Dartboard(x));
-            } else {
-                this.enemies.push(new FlyingArrow(x, highY + Math.random() * (lowY - highY)));
-            }
-        }
+        return new FlyingArrow(x, highY + Math.random() * (lowY - highY));
     }
 
     // Dart trifft Gegner
@@ -254,36 +293,45 @@ class World {
         this.darts.forEach((dart) => {
             if (!dart.img.complete) return;
             let box = dart.getHitbox();
-            this.enemies.forEach((enemy) => {
-                if (dart.used || enemy.dying || !this.overlaps(box, enemy.getHitbox())) return;
-                enemy.hit(dart.damage);
-                Sound.play("hitBoard");
-                dart.used = true;
-            });
-            if (!dart.used && this.boss.active && !this.boss.dead && this.overlaps(box, this.boss.getHitbox())) {
-                this.boss.hit(dart.damage);
-                Sound.play(this.config.boss.sounds.hitBoss);
-                dart.used = true;
-            }
+            this.enemies.forEach((enemy) => this.dartHitsEnemy(dart, box, enemy));
+            if (!dart.used) this.dartHitsBoss(dart, box);
         });
+    }
+
+    dartHitsEnemy(dart, box, enemy) {
+        if (dart.used || enemy.dying || !this.overlaps(box, enemy.getHitbox())) return;
+        enemy.hit(dart.damage);
+        Sound.play("hitBoard");
+        dart.used = true;
+    }
+
+    dartHitsBoss(dart, box) {
+        if (!this.boss.active || this.boss.dead || !this.overlaps(box, this.boss.getHitbox())) return;
+        this.boss.hit(dart.damage);
+        Sound.play(this.config.boss.sounds.hitBoss);
+        dart.used = true;
     }
 
     // Figur berührt Gegner: von oben draufgesprungen = Gegner besiegt, sonst Schaden
     checkEnemyContact() {
-        let c = this.character;
-        let box = c.getHitbox();
+        let box = this.character.getHitbox();
         this.enemies.forEach((enemy) => {
             if (enemy.dying || !this.overlaps(box, enemy.getHitbox())) return;
-            let feet = box.y + box.h;
-            let falling = c.speedY < 0;
-            if (falling && feet <= enemy.getHitbox().y + 30) {
-                enemy.die("top");
-                Sound.play("stomp");
-                c.bounce();
-            } else {
-                if (c.takeDamage()) Sound.play("hitHuman");
-            }
+            this.contact(enemy, box);
         });
+    }
+
+    contact(enemy, box) {
+        let c = this.character;
+        let feet = box.y + box.h;
+        let falling = c.speedY < 0;
+        if (falling && feet <= enemy.getHitbox().y + 30) {
+            enemy.die("top");
+            Sound.play("stomp");
+            c.bounce();
+        } else if (c.takeDamage()) {
+            Sound.play("hitHuman");
+        }
     }
 
     overlaps(a, b) {
@@ -291,24 +339,20 @@ class World {
     }
 
     checkItems() {
-        let c = this.character;
-        let box = c.getHitbox();
+        let box = this.character.getHitbox();
         this.items = this.items.filter((item) => {
             if (!item.img.complete || !this.overlaps(box, item.getHitbox())) return true;
-            if (item.type === "coin") {
-                c.coins++;
-                Sound.play("coin");
-            } else if (item.type === "dart") {
-                if (c.darts >= c.maxDarts) return true; // Leiste voll: Item bleibt liegen
-                c.darts++;
-                Sound.play("arrow");
-            } else if (item.type === "drink") {
-                if (c.health >= c.maxHealth) return true; // Leben voll: Item bleibt liegen
-                c.health++;
-                Sound.play("energy");
-            }
-            return false;
+            return !this.collect(item.type);
         });
+    }
+
+    // true, wenn das Item eingesammelt wurde (volle Leiste: Item bleibt liegen)
+    collect(type) {
+        let c = this.character;
+        if (type === "coin") { c.coins++; Sound.play("coin"); return true; }
+        if (type === "dart" && c.darts < c.maxDarts) { c.darts++; Sound.play("arrow"); return true; }
+        if (type === "drink" && c.health < c.maxHealth) { c.health++; Sound.play("energy"); return true; }
+        return false;
     }
 
     updateCamera() {
@@ -337,26 +381,32 @@ class World {
         this.updateCamera();
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
         this.layers.forEach((layer) => this.drawLayer(layer));
-
-        this.ctx.save();
-        this.ctx.translate(-this.cameraX, 0);
-        this.items.forEach((it) => {
-            if (it.x > this.cameraX - 60 && it.x < this.cameraX + 780) it.draw(this.ctx); // nur sichtbare Items
-        });
-        this.enemies.forEach((e) => {
-            if (e.x > this.cameraX - 150 && e.x < this.cameraX + 870) e.draw(this.ctx); // nur sichtbare Gegner
-        });
-        if (this.boss.x > this.cameraX - 150 && this.boss.x < this.cameraX + 870) this.boss.draw(this.ctx);
-        this.character.draw(this.ctx);
-        this.darts.forEach((d) => d.draw(this.ctx));
-        this.projectiles.forEach((m) => m.draw(this.ctx));
-        this.ctx.restore();
+        this.drawEntities();
         this.hud.draw(this.ctx);
         this.drawIntro();
+        this.drawLevelLogo();
         this.drawWin();
         this.drawLose();
-
         requestAnimationFrame(() => this.draw());
+    }
+
+    drawEntities() {
+        let ctx = this.ctx;
+        ctx.save();
+        ctx.translate(-this.cameraX, 0);
+        this.drawVisible(this.items, 60, 780);    // nur sichtbare Items
+        this.drawVisible(this.enemies, 150, 870); // nur sichtbare Gegner
+        this.drawVisible([this.boss], 150, 870);
+        this.character.draw(ctx);
+        this.darts.forEach((d) => d.draw(ctx));
+        this.projectiles.forEach((m) => m.draw(ctx));
+        ctx.restore();
+    }
+
+    drawVisible(list, left, right) {
+        list.forEach((o) => {
+            if (o.x > this.cameraX - left && o.x < this.cameraX + right) o.draw(this.ctx);
+        });
     }
 
     stop() {

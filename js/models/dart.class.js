@@ -32,21 +32,17 @@ class Dart extends MovableObject {
         return Math.abs(this.x - this.startX) > this.maxDistance || this.y > Character.GROUND_Y;
     }
 
-    // Das Bild zeigt die Spitze nach links unten, daher 135 Grad drehen
+    // Spitze zeigt in Flugrichtung
     draw(ctx) {
-        if (!this.img || !this.img.complete) return;
         ctx.save();
-        ctx.translate(this.x, this.y);
-        if (this.otherDirection) ctx.scale(-1, 1);
-        ctx.rotate(Math.atan2(this.speedY, this.speed)); // Spitze zeigt in Flugrichtung
-        let scale = this.strong ? 1.4 : 1;
-        if (this.strong) {
-            ctx.shadowColor = "#ff3b1f";
-            ctx.shadowBlur = 18;
-        }
-        let w = this.img.naturalWidth * scale;
-        let h = this.img.naturalHeight * scale;
-        ctx.drawImage(this.img, -w / 2, -h / 2, w, h);
+        if (this.strong) this.glow(ctx);
+        let angle = Math.atan2(this.speedY, this.speed);
+        this.drawCentered(ctx, this.img, { angle: angle, scale: this.strong ? 1.4 : 1, flip: this.otherDirection });
         ctx.restore();
     }
-}
+
+    glow(ctx) {
+        ctx.shadowColor = "#ff3b1f";
+        ctx.shadowBlur = 18;
+    }
+}

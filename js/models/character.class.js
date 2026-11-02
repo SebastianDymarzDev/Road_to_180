@@ -41,25 +41,18 @@ class Character extends MovableObject {
         this.keyboard = keyboard;
         this.y = Character.GROUND_Y;
         this.loadImage(this.IMAGES_IDLE[0]);
-        this.loadImages(this.IMAGES_IDLE);
-        this.loadImages(this.IMAGES_RUN);
-        this.loadImages(this.IMAGES_JUMP);
-        this.loadImages(this.IMAGES_DUCK);
-        this.loadImages(this.IMAGES_THROW);
-        this.loadImages(this.IMAGES_HIT);
-        this.loadImages(this.IMAGES_DIE);
-        this.loadImages(this.IMAGES_WIN);
-        this.loadImages(this.IMAGES_SLEEP);
+        this.loadAllImages();
         keyboard.lastInput = Date.now(); // Schlaf-Timer beginnt neu
         this.animate();
     }
 
+    loadAllImages() {
+        this.loadImages(this.IMAGES_IDLE, this.IMAGES_RUN, this.IMAGES_JUMP, this.IMAGES_DUCK, this.IMAGES_THROW,
+            this.IMAGES_HIT, this.IMAGES_DIE, this.IMAGES_WIN, this.IMAGES_SLEEP);
+    }
+
     frames(folder, name, count) {
-        let list = [];
-        for (let i = 1; i <= count; i++) {
-            list.push(`img_small/character/player/${folder}/${name}_0${i}.webp`);
-        }
-        return list;
+        return MovableObject.framePaths(`img_small/character/player/${folder}`, name, count);
     }
 
     // Trefferbox der Figur (die Sprites haben viel transparenten Rand)
@@ -81,25 +74,26 @@ class Character extends MovableObject {
         return true;
     }
 
-    win() {
-        this.won = true;
+    // gemeinsam für Sieg und Tod: Musik und Schritte aus, nicht mehr verwundbar oder getroffen
+    endRound() {
         Sound.stop("gameMusic");
         Sound.stop("walk");
         this.setSleeping(false);
-        this.winStart = Date.now();
-        this.invulnerableUntil = 0;
+        this.invulnerableUntil = 0; // kein Blinken mehr
         this.hurtUntil = 0;
+    }
+
+    win() {
+        this.won = true;
+        this.endRound();
+        this.winStart = Date.now();
     }
 
     die() {
         this.dead = true;
-        Sound.stop("gameMusic");
-        Sound.stop("walk");
-        this.setSleeping(false);
+        this.endRound();
         Sound.play("gameOver");
         this.deathStart = Date.now();
-        this.invulnerableUntil = 0; // kein Blinken mehr
-        this.hurtUntil = 0;
     }
 
     // kleiner Hüpfer nach einem Sprung auf einen Gegner
@@ -121,108 +115,145 @@ class Character extends MovableObject {
     }
 
     animate() {
-        // Bewegung + Physik: 60x pro Sekunde
-        this.moveInterval = setInterval(() => {
-            let k = this.dead || this.won || this.locked ? Character.NO_KEYS : this.keyboard;
-            this.ducking = k.is("DUCK") && !this.isInAir();
-            if (k.is("THROW")) {
-                if (!this.throwKeyDown) {
-                    this.throwKeyDown = true; // nur der Tastendruck zählt, nicht das Halten
-                    if (!this.throwing && !this.ducking) {
-                        let strong = k.is("CHARGE") && this.darts >= this.maxDarts;
-                        this.throwDart(strong);
-                    }
-                }
-            } else {
-                this.throwKeyDown = false;
-            }
-            // starker Wurf aufgeladen: Sound einmal beim Drücken von Shift
-            let charging = k.is("CHARGE") && this.darts >= this.maxDarts;
-            if (charging && !this.chargeSounded) Sound.play("charge");
-            this.chargeSounded = charging;
+        this.moveInterval = setInterval(() => this.moveStep(), 1000 / 60); // Bewegung + Physik: 60x pro Sekunde
+        this.animInterval = setInterval(() => this.animationStep(), 125);  // Animation: 8x pro Sekunde
+    }
 
-            if (!this.ducking) {
-                if (k.is("RIGHT")) { this.x += this.speed; this.otherDirection = false; }
-                if (k.is("LEFT")) { this.x -= this.speed; this.otherDirection = true; }
-            }
-            this.x = Math.max(this.minX, Math.min(this.maxX, this.x));
+    // Tastatur, die gerade zählt (tot, gewonnen oder gesperrt = keine Eingabe)
+    activeKeys() {
+        return this.dead || this.won || this.locked ? Character.NO_KEYS : this.keyboard;
+    }
 
-            if (k.is("JUMP") && !this.isInAir() && !this.ducking) {
-                this.speedY = this.jumpPower;
-                Sound.play("jump");
-            }
-            if (this.isInAir()) {
-                this.y -= this.speedY;
-                this.speedY -= this.gravity;
-                if (this.y >= Character.GROUND_Y) {
-                    this.y = Character.GROUND_Y;
-                    this.speedY = 0;
-                    Sound.play("land");
-                }
-            }
-            // Schritte: nur beim Laufen am Boden
-            let walking = !this.isInAir() && !this.ducking && (k.is("LEFT") || k.is("RIGHT"));
-            if (walking !== this.walkSounding) {
-                this.walkSounding = walking;
-                if (walking) Sound.start("walk");
-                else Sound.stop("walk");
-            }
-        }, 1000 / 60);
+    moveStep() {
+        let k = this.activeKeys();
+        this.ducking = k.is("DUCK") && !this.isInAir();
+        this.handleThrowKey(k);
+        this.handleChargeSound(k);
+        this.walk(k);
+        this.jumpAndFall(k);
+        this.updateWalkSound(k);
+    }
 
-        // Animation: 8x pro Sekunde
-        this.animInterval = setInterval(() => {
-            let k = this.dead || this.won || this.locked ? Character.NO_KEYS : this.keyboard;
-            if (this.locked) this.keyboard.lastInput = Date.now(); // Sperre zählt nicht als Untätigkeit
-            if (this.won) {
-                // jubelt: wechselt alle 400 ms zwischen den beiden Siegbildern
-                let i = Math.floor((Date.now() - this.winStart) / 400) % this.IMAGES_WIN.length;
-                this.img = this.imageCache[this.IMAGES_WIN[i]];
-                return;
-            }
-            if (this.dead) {
-                // erst stehend (lose_01), dann liegend (lose_02), bleibt liegen
-                let i = Math.min(this.IMAGES_DIE.length - 1, Math.floor((Date.now() - this.deathStart) / 400));
-                this.img = this.imageCache[this.IMAGES_DIE[i]];
-                return;
-            }
-            if (Date.now() < this.hurtUntil) {
-                this.setSleeping(false);
-                this.playAnimation(this.IMAGES_HIT);
-                return;
-            }
-            if (this.throwing) {
-                this.setSleeping(false);
-                return;
-            }
-            if (this.isInAir()) {
-                this.duckStep = 0;
-                this.playAnimation(this.IMAGES_JUMP);
-            } else if (this.ducking) {
-                // Frame 1 einmal beim Hinunterducken, danach Frame 2 halten
-                let i = Math.min(this.duckStep, this.IMAGES_DUCK.length - 1);
-                this.img = this.imageCache[this.IMAGES_DUCK[i]];
-                this.duckStep++;
-            } else {
-                this.duckStep = 0;
-                if (k.is("LEFT") || k.is("RIGHT")) {
-                    this.idleTick = 0;
-                    this.playAnimation(this.IMAGES_RUN);
-                } else if (!this.locked && this.keyboard.idleTime() > this.SLEEP_AFTER) {
-                    this.setSleeping(true);
-                    // schläft: wechselt alle 500 ms das Bild
-                    // Bild 1 nur beim Einschlafen, danach wechseln Bild 2 und 3 ab
-                    let n = Math.floor(this.sleepTick / this.idleSlowdown);
-                    let i = n === 0 ? 0 : 1 + ((n - 1) % (this.IMAGES_SLEEP.length - 1));
-                    this.img = this.imageCache[this.IMAGES_SLEEP[i]];
-                    this.sleepTick++;
-                    return;
-                } else {
-                    if (this.idleTick % this.idleSlowdown === 0) this.playAnimation(this.IMAGES_IDLE);
-                    this.idleTick++;
-                }
-            }
-            this.setSleeping(false);
-        }, 125);
+    handleThrowKey(k) {
+        if (!k.is("THROW")) {
+            this.throwKeyDown = false;
+            return;
+        }
+        if (this.throwKeyDown) return;
+        this.throwKeyDown = true; // nur der Tastendruck zählt, nicht das Halten
+        if (this.throwing || this.ducking) return;
+        this.throwDart(k.is("CHARGE") && this.darts >= this.maxDarts);
+    }
+
+    // starker Wurf aufgeladen: Sound einmal beim Drücken von Shift
+    handleChargeSound(k) {
+        let charging = k.is("CHARGE") && this.darts >= this.maxDarts;
+        if (charging && !this.chargeSounded) Sound.play("charge");
+        this.chargeSounded = charging;
+    }
+
+    walk(k) {
+        if (!this.ducking) {
+            if (k.is("RIGHT")) { this.x += this.speed; this.otherDirection = false; }
+            if (k.is("LEFT")) { this.x -= this.speed; this.otherDirection = true; }
+        }
+        this.x = Math.max(this.minX, Math.min(this.maxX, this.x));
+    }
+
+    jumpAndFall(k) {
+        if (k.is("JUMP") && !this.isInAir() && !this.ducking) {
+            this.speedY = this.jumpPower;
+            Sound.play("jump");
+        }
+        if (this.isInAir()) this.fall();
+    }
+
+    fall() {
+        this.y -= this.speedY;
+        this.speedY -= this.gravity;
+        if (this.y < Character.GROUND_Y) return;
+        this.y = Character.GROUND_Y;
+        this.speedY = 0;
+        Sound.play("land");
+    }
+
+    // Schritte: nur beim Laufen am Boden
+    updateWalkSound(k) {
+        let walking = !this.isInAir() && !this.ducking && (k.is("LEFT") || k.is("RIGHT"));
+        if (walking === this.walkSounding) return;
+        this.walkSounding = walking;
+        if (walking) Sound.start("walk");
+        else Sound.stop("walk");
+    }
+
+    animationStep() {
+        let k = this.activeKeys();
+        if (this.locked) this.keyboard.lastInput = Date.now(); // Sperre zählt nicht als Untätigkeit
+        if (this.won) return this.animateWin();
+        if (this.dead) return this.animateDeath();
+        if (Date.now() < this.hurtUntil) return this.animateHurt();
+        if (this.throwing) return this.setSleeping(false);
+        if (!this.isInAir() && !this.ducking && this.shouldSleep(k)) return this.animateSleep();
+        this.animateAwake(k);
+        this.setSleeping(false);
+    }
+
+    // jubelt: wechselt alle 400 ms zwischen den beiden Siegbildern
+    animateWin() {
+        this.img = this.imageCache[this.frameLoop(this.IMAGES_WIN, Date.now() - this.winStart, 400)];
+    }
+
+    // erst stehend (lose_01), dann liegend (lose_02), bleibt liegen
+    animateDeath() {
+        this.img = this.imageCache[this.frameOnce(this.IMAGES_DIE, Date.now() - this.deathStart, 400)];
+    }
+
+    animateHurt() {
+        this.setSleeping(false);
+        this.playAnimation(this.IMAGES_HIT);
+    }
+
+    shouldSleep(k) {
+        return !k.is("LEFT") && !k.is("RIGHT") && !this.locked && this.keyboard.idleTime() > this.SLEEP_AFTER;
+    }
+
+    // Bild 1 nur beim Einschlafen, danach wechseln Bild 2 und 3 alle 500 ms ab
+    animateSleep() {
+        this.duckStep = 0;
+        this.setSleeping(true);
+        let n = Math.floor(this.sleepTick / this.idleSlowdown);
+        let i = n === 0 ? 0 : 1 + ((n - 1) % (this.IMAGES_SLEEP.length - 1));
+        this.img = this.imageCache[this.IMAGES_SLEEP[i]];
+        this.sleepTick++;
+    }
+
+    animateAwake(k) {
+        if (this.isInAir()) {
+            this.duckStep = 0;
+            this.playAnimation(this.IMAGES_JUMP);
+        } else if (this.ducking) {
+            this.animateDuck();
+        } else {
+            this.duckStep = 0;
+            this.animateGround(k);
+        }
+    }
+
+    // Frame 1 einmal beim Hinunterducken, danach Frame 2 halten
+    animateDuck() {
+        let i = Math.min(this.duckStep, this.IMAGES_DUCK.length - 1);
+        this.img = this.imageCache[this.IMAGES_DUCK[i]];
+        this.duckStep++;
+    }
+
+    animateGround(k) {
+        if (k.is("LEFT") || k.is("RIGHT")) {
+            this.idleTick = 0;
+            this.playAnimation(this.IMAGES_RUN);
+            return;
+        }
+        if (this.idleTick % this.idleSlowdown === 0) this.playAnimation(this.IMAGES_IDLE);
+        this.idleTick++;
     }
 
     // Schnarchen läuft nur, solange die Figur schläft
@@ -254,4 +285,4 @@ class Character extends MovableObject {
         clearInterval(this.moveInterval);
         clearInterval(this.animInterval);
     }
-}
+}

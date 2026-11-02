@@ -11,19 +11,13 @@ function init() {
 
 // Höchstes freigeschaltetes Level (im Browser gespeichert)
 function getUnlockedLevel() {
-    try {
-        return parseInt(localStorage.getItem("road180_unlocked")) || 1;
-    } catch (e) {
-        return 1;
-    }
+    return parseInt(readStorage("road180_unlocked", 1)) || 1;
 }
 
 // Schaltet ein Level frei, aber nur wenn es in levels.js existiert
 function unlockLevel(level) {
     if (!LEVELS[level] || level <= getUnlockedLevel()) return;
-    try {
-        localStorage.setItem("road180_unlocked", level);
-    } catch (e) { }
+    writeStorage("road180_unlocked", level);
 }
 
 // Badges im Level-Menü: freigeschaltete Level sind anklickbar, die anderen dunkel
@@ -65,12 +59,16 @@ function startLevel(level) {
     if (world) world.stop();
     Sound.stop("menuMusic");
     Sound.stop("gameMusic");
-    // Spielmusik beginnt erst, wenn die Startmusik zu Ende ist
+    startGameMusicAfterJingle();
+    init();
+}
+
+// Spielmusik beginnt erst, wenn die Startmusik zu Ende ist
+function startGameMusicAfterJingle() {
     let run = ++levelRun;
     Sound.playThen("levelStart", () => {
         if (run === levelRun && world && !world.character.dead && !world.character.won) Sound.start("gameMusic");
     });
-    init();
 }
 
 function restartLevel() {

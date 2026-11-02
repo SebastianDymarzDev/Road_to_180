@@ -25,17 +25,9 @@ const SOUNDS = {
 };
 
 class Sound {
-    static muted = Sound.readMuted();
+    static muted = readStorage("road180_muted", "0") === "1";
     static audios = {};        // geladene Audio-Objekte
     static wanted = new Set(); // Schleifen, die gerade laufen sollen
-
-    static readMuted() {
-        try {
-            return localStorage.getItem("road180_muted") === "1";
-        } catch (e) {
-            return false;
-        }
-    }
 
     static audio(name) {
         if (!Sound.audios[name]) {
@@ -53,19 +45,22 @@ class Sound {
         Object.keys(SOUNDS).forEach((name) => Sound.audio(name).load());
     }
 
-    // Einmaliger Sound. Eine Kopie erlaubt, dass sich Sounds überlappen.
-    static play(name) {
-        if (Sound.muted) return;
+    // Kopie eines Sounds, damit sich mehrere gleichzeitig überlappen können
+    static clone(name) {
         let a = Sound.audio(name).cloneNode();
         a.volume = SOUNDS[name].volume;
-        a.play().catch(() => {});
+        return a;
+    }
+
+    static play(name) {
+        if (Sound.muted) return;
+        Sound.clone(name).play().catch(() => {});
     }
 
     // Spielt einen Sound und ruft danach callback auf (sofort, wenn kein Ton möglich ist)
     static playThen(name, callback) {
         if (Sound.muted) return callback();
-        let a = Sound.audio(name).cloneNode();
-        a.volume = SOUNDS[name].volume;
+        let a = Sound.clone(name);
         a.addEventListener("ended", callback, { once: true });
         a.addEventListener("error", callback, { once: true });
         a.play().catch(callback);
@@ -97,9 +92,7 @@ class Sound {
 
     static toggleMute() {
         Sound.muted = !Sound.muted;
-        try {
-            localStorage.setItem("road180_muted", Sound.muted ? "1" : "0");
-        } catch (e) {}
+        writeStorage("road180_muted", Sound.muted ? "1" : "0");
         Sound.refresh();
         Sound.updateButton();
     }
@@ -107,7 +100,7 @@ class Sound {
     // Zeigt auf dem Mute-Button, ob der Ton an oder aus ist
     static updateButton() {
         let img = document.getElementById("mute-img");
-        if (img) img.src = "img_small/assets/buttons/" + (Sound.muted ? "sound_on" : "sound_off") + ".webp";
+        if (img) img.src = "img_small/assets/buttons/" + (Sound.muted ? "sound_off" : "sound_on") + ".webp";
     }
 
     // Browser erlauben Ton erst nach dem ersten Klick oder Tastendruck

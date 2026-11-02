@@ -36,11 +36,6 @@ class BossProjectile extends MovableObject {
     }
 
     draw(ctx) {
-        if (!this.img || !this.img.complete) return;
-        ctx.save();
-        ctx.translate(this.x, this.y);
-        ctx.rotate(this.angle);
-        ctx.drawImage(this.img, -this.img.naturalWidth / 2, -this.img.naturalHeight / 2);
-        ctx.restore();
+        this.drawCentered(ctx, this.img, { angle: this.angle });
     }
-}
+}

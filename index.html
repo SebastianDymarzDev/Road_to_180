@@ -22,6 +22,7 @@
     <script src="js/models/enemy.class.js"></script>
     <script src="js/models/boss-projectile.class.js"></script>
     <script src="js/models/endboss.class.js"></script>
+    <script src="js/storage.js"></script>
     <script src="js/audio.js"></script>
     <script src="js/levels.js"></script>
     <script src="js/models/world.class.js"></script>
@@ -34,12 +35,13 @@
         <img id="menu-logo" src="img_small/assets/logo_with_player.webp" alt="Road to 180">
 
         <div id="menu-buttons">
-            <button class="menu-btn play" onclick="startLevel(1)"><img src="img_small/assets/buttons/play_button.webp"
+            <button class="menu-btn play" onclick="startLevel(getUnlockedLevel())"><img src="img_small/assets/buttons/play_button.webp"
                     alt="Spielen"></button>
             <button class="menu-btn" onclick="showLevelSelect()"><img
                     src="img_small/assets/buttons/select_level_button.webp" alt="Level wählen"></button>
             <button class="menu-btn"><img src="img_small/assets/buttons/options_button.webp" alt="Optionen"></button>
-            <button class="menu-btn"><img src="img_small/assets/buttons/credits_button.webp" alt="Credits"></button>
+            <button class="menu-btn" onclick="location.href = 'imprint.html'"><img
+                    src="img_small/assets/buttons/credits_button.webp" alt="Credits"></button>
         </div>
         <div id="level-select">
             <div id="level-badges">
@@ -57,11 +59,12 @@
             <button id="back-btn" onclick="hideLevelSelect()"><img src="img_small/assets/buttons/back_button.webp"
                     alt="Zurück"></button>
         </div>
-        <button id="game-back-btn" onclick="leaveGame()"><img src="img_small/assets/buttons/back_button.webp" alt="Zurück"></button>
+        <button id="game-back-btn" onclick="leaveGame()"><img src="img_small/assets/buttons/back_button.webp"
+                alt="Zurück"></button>
         <button id="fullscreen-btn" onclick="toggleFullscreen(); this.blur()"><img
                 src="img_small/assets/buttons/fullscreen_enter.webp" alt="Vollbild"></button>
         <button id="mute-btn" onclick="Sound.toggleMute(); this.blur()"><img id="mute-img"
-                src="img_small/assets/buttons/sound_off.webp" alt="Ton an/aus"></button>
+                src="img_small/assets/buttons/sound_on.webp" alt="Ton an/aus"></button>
         <div id="game">
             <canvas id="canvas" width="720" height="480"></canvas>
         </div>

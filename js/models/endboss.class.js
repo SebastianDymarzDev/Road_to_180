@@ -18,29 +18,33 @@ class Endboss extends MovableObject {
         this.scale = cfg.scale;
         this.maxHealth = cfg.health;
         this.health = cfg.health;
+        this.readAnger(cfg);
+        this.x = x;
+        this.y = Character.GROUND_Y;
+        this.loadAllImages();
+    }
+
+    readAnger(cfg) {
         this.angryBelow = cfg.angryBelow || 2;
         this.angryAt = cfg.angryAt || [this.angryBelow];
         this.pauses = cfg.pauses || [this.throwPause, this.angryThrowPause];
         this.angryFrames = cfg.angryFrames || [];
-        this.x = x;
-        this.y = Character.GROUND_Y;
-        this.IMAGES_IDLE = this.paths("idle", "idle", cfg.frames.idle);
-        this.IMAGES_ANGRY = this.paths("angry", "angry", cfg.frames.angry);
-        this.IMAGES_THROW = this.paths("throw", cfg.throwName, cfg.frames.throw);
-        this.IMAGES_HIT = this.paths("hit", "hit", cfg.frames.hit);
-        this.IMAGES_DIE = this.paths("die", "die", cfg.frames.die);
+    }
+
+    loadAllImages() {
+        let f = this.cfg.frames;
+        this.IMAGES_IDLE = this.paths("idle", "idle", f.idle);
+        this.IMAGES_ANGRY = this.paths("angry", "angry", f.angry);
+        this.IMAGES_THROW = this.paths("throw", this.cfg.throwName, f.throw);
+        this.IMAGES_HIT = this.paths("hit", "hit", f.hit);
+        this.IMAGES_DIE = this.paths("die", "die", f.die);
         this.loadImage(this.IMAGES_IDLE[0]);
-        [this.IMAGES_IDLE, this.IMAGES_ANGRY, this.IMAGES_THROW, this.IMAGES_HIT, this.IMAGES_DIE].forEach((list) =>
-            this.loadImages(list)
-        );
+        this.loadImages(this.IMAGES_IDLE, this.IMAGES_ANGRY, this.IMAGES_THROW, this.IMAGES_HIT, this.IMAGES_DIE);
     }
 
     paths(folder, name, count) {
-        let list = [];
-        for (let i = 1; i <= count; i++) {
-            list.push(`img_small/character/enemies/endboss/${this.cfg.folder}/${folder}/${this.cfg.prefix}_${name}_0${i}.webp`);
-        }
-        return list;
+        let prefix = `img_small/character/enemies/endboss/${this.cfg.folder}/${folder}`;
+        return MovableObject.framePaths(prefix, `${this.cfg.prefix}_${name}`, count);
     }
 
     projectilePath() {
@@ -86,15 +90,19 @@ class Endboss extends MovableObject {
             this.setState("throw");
             this.thrown = false;
         } else if (this.state === "throw") {
-            if (!this.thrown && elapsed >= 100) {
-                this.thrown = true;
-                Sound.play(this.cfg.sounds.throw);
-                if (this.onThrow) this.onThrow(this.x - this.cfg.hand.x * this.scale, this.y - this.cfg.hand.y * this.scale);
-            }
-            if (elapsed >= 450) this.endState(this.pauses[Math.min(this.phase(), this.pauses.length - 1)]);
+            this.updateThrow(elapsed);
         } else if (this.state === "hit" && elapsed >= 450) {
             this.endState(1000);
         }
+    }
+
+    updateThrow(elapsed) {
+        if (!this.thrown && elapsed >= 100) {
+            this.thrown = true;
+            Sound.play(this.cfg.sounds.throw);
+            if (this.onThrow) this.onThrow(this.x - this.cfg.hand.x * this.scale, this.y - this.cfg.hand.y * this.scale);
+        }
+        if (elapsed >= 450) this.endState(this.pauses[Math.min(this.phase(), this.pauses.length - 1)]);
     }
 
     endState(pause) {
@@ -109,31 +117,26 @@ class Endboss extends MovableObject {
     }
 
     frameImage() {
-        let now = Date.now();
-        let elapsed = now - this.stateStart;
+        let elapsed = Date.now() - this.stateStart;
         let path;
-        if (this.state === "throw") {
-            let list = this.IMAGES_THROW;
-            path = list[Math.min(list.length - 1, Math.floor(elapsed / (450 / list.length)))];
-        } else if (this.state === "hit") {
-            path = this.IMAGES_HIT[Math.floor(elapsed / 225) % this.IMAGES_HIT.length];
-        } else if (this.state === "die") {
-            path = this.IMAGES_DIE[Math.min(this.IMAGES_DIE.length - 1, Math.floor(elapsed / 250))];
-        } else {
-            let list = this.IMAGES_IDLE;
-            if (this.isAngry()) {
-                list = this.IMAGES_ANGRY;
-                let wanted = this.angryFrames[this.phase() - 1];
-                if (wanted) list = wanted.map((i) => this.IMAGES_ANGRY[i]);
-            }
-            path = list[Math.floor(now / this.idleFrameTime) % list.length];
-        }
+        if (this.state === "throw") path = this.frameOnce(this.IMAGES_THROW, elapsed, 450 / this.IMAGES_THROW.length);
+        else if (this.state === "hit") path = this.frameLoop(this.IMAGES_HIT, elapsed, 225);
+        else if (this.state === "die") path = this.frameOnce(this.IMAGES_DIE, elapsed, 250);
+        else path = this.idlePath();
         return this.imageCache[path];
     }
 
-    draw(ctx) {
-        let img = this.frameImage();
-        if (!img || !img.complete) return;
-        ctx.drawImage(img, this.x - img.naturalWidth / 2, this.y - img.naturalHeight);
+    idlePath() {
+        let list = this.IMAGES_IDLE;
+        if (this.isAngry()) {
+            list = this.IMAGES_ANGRY;
+            let wanted = this.angryFrames[this.phase() - 1];
+            if (wanted) list = wanted.map((i) => this.IMAGES_ANGRY[i]);
+        }
+        return this.frameLoop(list, Date.now(), this.idleFrameTime);
     }
-}
+
+    draw(ctx) {
+        super.draw(ctx, this.frameImage());
+    }
+}
