@@ -88,6 +88,7 @@ class Endboss extends MovableObject {
         } else if (this.state === "throw") {
             if (!this.thrown && elapsed >= 100) {
                 this.thrown = true;
+                Sound.play(this.cfg.sounds.throw);
                 if (this.onThrow) this.onThrow(this.x - this.cfg.hand.x * this.scale, this.y - this.cfg.hand.y * this.scale);
             }
             if (elapsed >= 450) this.endState(this.pauses[Math.min(this.phase(), this.pauses.length - 1)]);

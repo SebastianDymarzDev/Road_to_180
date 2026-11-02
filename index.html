@@ -22,6 +22,7 @@
     <script src="js/models/enemy.class.js"></script>
     <script src="js/models/boss-projectile.class.js"></script>
     <script src="js/models/endboss.class.js"></script>
+    <script src="js/audio.js"></script>
     <script src="js/levels.js"></script>
     <script src="js/models/world.class.js"></script>
     <script src="js/game.js"></script>
@@ -57,6 +58,10 @@
                     alt="Zurück"></button>
         </div>
         <button id="game-back-btn" onclick="leaveGame()"><img src="img_small/assets/buttons/back_button.webp" alt="Zurück"></button>
+        <button id="fullscreen-btn" onclick="toggleFullscreen(); this.blur()"><img
+                src="img_small/assets/buttons/fullscreen_enter.webp" alt="Vollbild"></button>
+        <button id="mute-btn" onclick="Sound.toggleMute(); this.blur()"><img id="mute-img"
+                src="img_small/assets/buttons/sound_off.webp" alt="Ton an/aus"></button>
         <div id="game">
             <canvas id="canvas" width="720" height="480"></canvas>
         </div>

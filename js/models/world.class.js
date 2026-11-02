@@ -118,7 +118,7 @@ class World {
         let box = this.character.getHitbox();
         this.projectiles.forEach((projectile) => {
             if (projectile.used || !this.overlaps(box, projectile.getHitbox())) return;
-            this.character.takeDamage();
+            if (this.character.takeDamage()) Sound.play(this.config.boss.sounds.hitPlayer);
             projectile.used = true;
         });
     }
@@ -151,6 +151,7 @@ class World {
         if (!this.character.won) {
             this.character.win();
             this.projectiles = [];
+            Sound.play(LEVELS[this.level + 1] ? "win" : "badge");
         }
         let pressed = this.keyboard.wasPressed("RESTART"); // immer abfragen, damit alte Tastendrücke verfallen
         if (!this.winVisible()) return false;
@@ -256,10 +257,12 @@ class World {
             this.enemies.forEach((enemy) => {
                 if (dart.used || enemy.dying || !this.overlaps(box, enemy.getHitbox())) return;
                 enemy.hit(dart.damage);
+                Sound.play("hitBoard");
                 dart.used = true;
             });
             if (!dart.used && this.boss.active && !this.boss.dead && this.overlaps(box, this.boss.getHitbox())) {
                 this.boss.hit(dart.damage);
+                Sound.play(this.config.boss.sounds.hitBoss);
                 dart.used = true;
             }
         });
@@ -275,9 +278,10 @@ class World {
             let falling = c.speedY < 0;
             if (falling && feet <= enemy.getHitbox().y + 30) {
                 enemy.die("top");
+                Sound.play("stomp");
                 c.bounce();
             } else {
-                c.takeDamage();
+                if (c.takeDamage()) Sound.play("hitHuman");
             }
         });
     }
@@ -293,12 +297,15 @@ class World {
             if (!item.img.complete || !this.overlaps(box, item.getHitbox())) return true;
             if (item.type === "coin") {
                 c.coins++;
+                Sound.play("coin");
             } else if (item.type === "dart") {
                 if (c.darts >= c.maxDarts) return true; // Leiste voll: Item bleibt liegen
                 c.darts++;
+                Sound.play("arrow");
             } else if (item.type === "drink") {
                 if (c.health >= c.maxHealth) return true; // Leben voll: Item bleibt liegen
                 c.health++;
+                Sound.play("energy");
             }
             return false;
         });

@@ -40,3 +40,11 @@ canvas {
     background-color: black;
     border: 2px solid #d4141c;
 }
+
+/* Vollbild: Spielfeld füllt den Bildschirm, das Seitenverhältnis bleibt */
+canvas:fullscreen {
+    width: 100vw;
+    height: 100vh;
+    object-fit: contain;
+    border: none;
+}

@@ -27,6 +27,7 @@ const LEVELS = {
             hitbox: { w: 90, h: 180 },
             hand: { x: 85, y: 125 },
             flight: { gravity: 0.35, lift: 8, rotation: "spin" },
+            sounds: { throw: "throwMug", hitPlayer: "mugHit", hitBoss: "hitHuman" },
         },
     },
     2: {
@@ -44,6 +45,7 @@ const LEVELS = {
             hitbox: { w: 95, h: 160 },
             hand: { x: 85, y: 125 },
             flight: { gravity: 0.1, lift: 2.5, rotation: "aim" },
+            sounds: { throw: "throw", hitPlayer: "hitHuman", hitBoss: "hitHuman" },
         },
     },
     3: {
@@ -61,6 +63,7 @@ const LEVELS = {
             hitbox: { w: 70, h: 185 },
             hand: { x: 70, y: 135 },
             flight: { gravity: 0.1, lift: 2.5, rotation: "aim" },
+            sounds: { throw: "throw", hitPlayer: "hitHuman", hitBoss: "hitHuman" },
         },
     },
     4: {
@@ -78,6 +81,7 @@ const LEVELS = {
             hitbox: { w: 95, h: 180 },
             hand: { x: 85, y: 130 },
             flight: { gravity: 0.1, lift: 2.5, rotation: "aim" },
+            sounds: { throw: "throw", hitPlayer: "hitHuman", hitBoss: "hitHuman" },
         },
     },
     5: {
@@ -98,6 +102,7 @@ const LEVELS = {
             hitbox: { w: 120, h: 145 },
             hand: { x: 90, y: 120 },
             flight: { gravity: 0.1, lift: 2.5, rotation: "aim" },
+            sounds: { throw: "throw", hitPlayer: "hitHuman", hitBoss: "hitBoard" },
         },
     },
 };

@@ -6,6 +6,8 @@ class Character extends MovableObject {
     duckStep = 0;
     idleTick = 0;
     idleSlowdown = 4; // 4 x 125 ms = 500 ms pro Idle-Bild
+    SLEEP_AFTER = 10000; // so viele ms ohne Taste, dann schläft die Figur
+    sleepTick = 0;
     throwing = false;
     maxHealth = 5;
     health = 5;
@@ -32,6 +34,7 @@ class Character extends MovableObject {
     IMAGES_HIT = this.frames("player_hit", "hit", 2);
     IMAGES_DIE = this.frames("player_die", "lose", 2);
     IMAGES_WIN = this.frames("player_win", "win", 2);
+    IMAGES_SLEEP = this.frames("player_sleep", "asleep", 3);
 
     constructor(keyboard) {
         super();
@@ -46,6 +49,8 @@ class Character extends MovableObject {
         this.loadImages(this.IMAGES_HIT);
         this.loadImages(this.IMAGES_DIE);
         this.loadImages(this.IMAGES_WIN);
+        this.loadImages(this.IMAGES_SLEEP);
+        keyboard.lastInput = Date.now(); // Schlaf-Timer beginnt neu
         this.animate();
     }
 
@@ -63,18 +68,24 @@ class Character extends MovableObject {
         return { x: this.x - 25, y: this.y - 4 - h, w: 50, h: h };
     }
 
+    // true, wenn wirklich Schaden entstanden ist (nicht während der Unverwundbarkeit)
     takeDamage() {
-        if (this.dead || this.won) return;
+        if (this.dead || this.won) return false;
         let now = Date.now();
-        if (now < this.invulnerableUntil) return;
+        if (now < this.invulnerableUntil) return false;
         this.health = Math.max(0, this.health - 1);
         this.invulnerableUntil = now + 1000; // 1,0 Sekunden unverwundbar
         this.hurtUntil = now + 450;
+        this.keyboard.lastInput = now; // ein Treffer weckt die Figur auf
         if (this.health === 0) this.die();
+        return true;
     }
 
     win() {
         this.won = true;
+        Sound.stop("gameMusic");
+        Sound.stop("walk");
+        this.setSleeping(false);
         this.winStart = Date.now();
         this.invulnerableUntil = 0;
         this.hurtUntil = 0;
@@ -82,6 +93,10 @@ class Character extends MovableObject {
 
     die() {
         this.dead = true;
+        Sound.stop("gameMusic");
+        Sound.stop("walk");
+        this.setSleeping(false);
+        Sound.play("gameOver");
         this.deathStart = Date.now();
         this.invulnerableUntil = 0; // kein Blinken mehr
         this.hurtUntil = 0;
@@ -121,6 +136,10 @@ class Character extends MovableObject {
             } else {
                 this.throwKeyDown = false;
             }
+            // starker Wurf aufgeladen: Sound einmal beim Drücken von Shift
+            let charging = k.is("CHARGE") && this.darts >= this.maxDarts;
+            if (charging && !this.chargeSounded) Sound.play("charge");
+            this.chargeSounded = charging;
 
             if (!this.ducking) {
                 if (k.is("RIGHT")) { this.x += this.speed; this.otherDirection = false; }
@@ -130,6 +149,7 @@ class Character extends MovableObject {
 
             if (k.is("JUMP") && !this.isInAir() && !this.ducking) {
                 this.speedY = this.jumpPower;
+                Sound.play("jump");
             }
             if (this.isInAir()) {
                 this.y -= this.speedY;
@@ -137,13 +157,22 @@ class Character extends MovableObject {
                 if (this.y >= Character.GROUND_Y) {
                     this.y = Character.GROUND_Y;
                     this.speedY = 0;
+                    Sound.play("land");
                 }
+            }
+            // Schritte: nur beim Laufen am Boden
+            let walking = !this.isInAir() && !this.ducking && (k.is("LEFT") || k.is("RIGHT"));
+            if (walking !== this.walkSounding) {
+                this.walkSounding = walking;
+                if (walking) Sound.start("walk");
+                else Sound.stop("walk");
             }
         }, 1000 / 60);
 
         // Animation: 8x pro Sekunde
         this.animInterval = setInterval(() => {
             let k = this.dead || this.won || this.locked ? Character.NO_KEYS : this.keyboard;
+            if (this.locked) this.keyboard.lastInput = Date.now(); // Sperre zählt nicht als Untätigkeit
             if (this.won) {
                 // jubelt: wechselt alle 400 ms zwischen den beiden Siegbildern
                 let i = Math.floor((Date.now() - this.winStart) / 400) % this.IMAGES_WIN.length;
@@ -157,10 +186,14 @@ class Character extends MovableObject {
                 return;
             }
             if (Date.now() < this.hurtUntil) {
+                this.setSleeping(false);
                 this.playAnimation(this.IMAGES_HIT);
                 return;
             }
-            if (this.throwing) return;
+            if (this.throwing) {
+                this.setSleeping(false);
+                return;
+            }
             if (this.isInAir()) {
                 this.duckStep = 0;
                 this.playAnimation(this.IMAGES_JUMP);
@@ -174,12 +207,31 @@ class Character extends MovableObject {
                 if (k.is("LEFT") || k.is("RIGHT")) {
                     this.idleTick = 0;
                     this.playAnimation(this.IMAGES_RUN);
+                } else if (!this.locked && this.keyboard.idleTime() > this.SLEEP_AFTER) {
+                    this.setSleeping(true);
+                    // schläft: wechselt alle 500 ms das Bild
+                    // Bild 1 nur beim Einschlafen, danach wechseln Bild 2 und 3 ab
+                    let n = Math.floor(this.sleepTick / this.idleSlowdown);
+                    let i = n === 0 ? 0 : 1 + ((n - 1) % (this.IMAGES_SLEEP.length - 1));
+                    this.img = this.imageCache[this.IMAGES_SLEEP[i]];
+                    this.sleepTick++;
+                    return;
                 } else {
                     if (this.idleTick % this.idleSlowdown === 0) this.playAnimation(this.IMAGES_IDLE);
                     this.idleTick++;
                 }
             }
+            this.setSleeping(false);
         }, 125);
+    }
+
+    // Schnarchen läuft nur, solange die Figur schläft
+    setSleeping(sleeping) {
+        if (sleeping === this.sleeping) return;
+        this.sleeping = sleeping;
+        this.sleepTick = 0;
+        if (sleeping) Sound.start("snoring");
+        else Sound.stop("snoring");
     }
 
     throwDart(strong) {
@@ -190,12 +242,15 @@ class Character extends MovableObject {
             if (this.dead || this.won) return;
             this.img = this.imageCache[this.IMAGES_THROW[1]];
             let dir = this.otherDirection ? -1 : 1;
+            Sound.play("throw");
             if (this.onThrow) this.onThrow(this.x + dir * 45, this.y - 115, this.otherDirection, strong);
         }, 150);
         setTimeout(() => (this.throwing = false), 400);
     }
 
     stop() {
+        Sound.stop("walk");
+        Sound.stop("snoring");
         clearInterval(this.moveInterval);
         clearInterval(this.animInterval);
     }
