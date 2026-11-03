@@ -2,20 +2,28 @@ let canvas;
 let world;
 let keyboard = new Keyboard();
 let currentLevel = 1;
-let levelRun = 0; // zählt Levelstarts, damit eine alte Startmusik-Weiterleitung verfällt
+let levelRun = 0;
 
+/**
+ * Creates the canvas reference and the world for the current level.
+ */
 function init() {
     canvas = document.getElementById("canvas");
     world = new World(canvas, keyboard, currentLevel);
 }
 
-// Schaltet ein Level frei, aber nur wenn es in levels.js existiert
+/**
+ * Unlocks a level if it exists and is not unlocked yet.
+ * @param {number} level - Level number.
+ */
 function unlockLevel(level) {
     if (!LEVELS[level] || level <= getUnlockedLevel()) return;
     writeStorage(UNLOCKED_KEY, level);
 }
 
-// Badges im Level-Menü: freigeschaltete Level sind anklickbar, die anderen dunkel
+/**
+ * Enables or locks the level buttons according to the progress.
+ */
 function updateLevelButtons() {
     let unlocked = getUnlockedLevel();
     document.querySelectorAll(".level-btn").forEach((btn, i) => {
@@ -27,6 +35,9 @@ function updateLevelButtons() {
     });
 }
 
+/**
+ * Sets up the main menu: buttons, sound, touch controls and music. After 1.5 seconds the menu shrinks.
+ */
 function showMenu() {
     updateLevelButtons();
     Sound.unlockOnFirstInput();
@@ -39,15 +50,25 @@ function showMenu() {
     }, 1500);
 }
 
+/**
+ * Shows the level selection.
+ */
 function showLevelSelect() {
     updateLevelButtons();
     document.getElementById("menu").classList.add("levels");
 }
 
+/**
+ * Hides the level selection again.
+ */
 function hideLevelSelect() {
     document.getElementById("menu").classList.remove("levels");
 }
 
+/**
+ * Starts a level: hides the menu, rebuilds the world and starts the music.
+ * @param {number} level - Level number.
+ */
 function startLevel(level) {
     currentLevel = level;
     let menu = document.getElementById("menu");
@@ -60,7 +81,9 @@ function startLevel(level) {
     init();
 }
 
-// Spielmusik beginnt erst, wenn die Startmusik zu Ende ist
+/**
+ * Plays the level start jingle and then starts the game music if the round is still running.
+ */
 function startGameMusicAfterJingle() {
     let run = ++levelRun;
     Sound.playThen("levelStart", () => {
@@ -68,21 +91,29 @@ function startGameMusicAfterJingle() {
     });
 }
 
+/**
+ * Restarts the current level.
+ */
 function restartLevel() {
     startLevel(currentLevel);
 }
 
-// Spielfeld im Vollbild ein- oder ausschalten (Esc beendet das Vollbild)
+/**
+ * Switches the game field between fullscreen and window.
+ */
 function toggleFullscreen() {
     if (document.fullscreenElement) document.exitFullscreen();
     else document.getElementById("canvas").requestFullscreen();
 }
 
+/**
+ * Leaves the game and returns to the menu (exits fullscreen, stops the world, switches the music).
+ */
 function leaveGame() {
     if (document.fullscreenElement) document.exitFullscreen();
     document.getElementById("menu").classList.remove("playing");
     if (world) { world.stop(); world = null; }
-    levelRun++; // alte Startmusik darf keine Spielmusik mehr starten
+    levelRun++;
     Sound.stop("gameMusic");
     Sound.start("menuMusic");
 }

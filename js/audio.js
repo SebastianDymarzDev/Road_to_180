@@ -1,5 +1,3 @@
-// Alle Sounds des Spiels. Datei oder Lautstärke (0 bis 1) kannst du hier ändern.
-// loop: true = läuft in Dauerschleife (Musik, Schritte)
 const SOUNDS = {
     menuMusic: { file: "game_loop.mp3", volume: 0.35, loop: true },
     gameMusic: { file: "road_to_180_loop.mp3", volume: 0.07, loop: true },
@@ -24,26 +22,41 @@ const SOUNDS = {
     badge: { file: "clear_game_badge.mp3", volume: 0.7 },
 };
 
+/**
+ * Central sound management: volume, muting, music and effects.
+ */
 class Sound {
     static muted = readStorage("road180_muted", "0") === "1";
     static musicVolume = Sound.readVolume("road180_music");
     static fxVolume = Sound.readVolume("road180_fx");
-    static audios = {};        // geladene Audio-Objekte
-    static wanted = new Set(); // Schleifen, die gerade laufen sollen
+    static audios = {};
+    static wanted = new Set();
 
-    // Regler-Wert von 0 bis 1 (1 = volle Lautstärke aus SOUNDS)
+    /**
+     * Reads a saved volume from storage.
+     * @param {string} key - Storage key (e.g. "road180_music").
+     * @returns {number} Volume from 0 to 1 (1 if nothing or an invalid value is saved).
+     */
     static readVolume(key) {
         let value = parseFloat(readStorage(key, 1));
         return isNaN(value) ? 1 : Math.min(1, Math.max(0, value));
     }
 
-    // Lautstärke eines Sounds: Wert aus SOUNDS mal Regler (Musik oder Effekte)
+    /**
+     * Calculates the effective volume of a sound (value from SOUNDS times the music or effects slider).
+     * @param {string} name - Name of the sound in SOUNDS.
+     * @returns {number} Volume from 0 to 1.
+     */
     static volumeOf(name) {
         let slider = name.endsWith("Music") ? Sound.musicVolume : Sound.fxVolume;
         return SOUNDS[name].volume * slider;
     }
 
-    // type: "music" oder "fx". Speichert den Wert und gilt sofort auch für laufende Sounds.
+    /**
+     * Sets and saves the volume for music or effects and applies it to all loaded sounds.
+     * @param {"music"|"fx"} type - Music or effects.
+     * @param {number} value - Slider value from 0 to 1.
+     */
     static setVolume(type, value) {
         if (type === "music") Sound.musicVolume = value;
         else Sound.fxVolume = value;
@@ -51,6 +64,11 @@ class Sound {
         Object.keys(Sound.audios).forEach((name) => (Sound.audios[name].volume = Sound.volumeOf(name)));
     }
 
+    /**
+     * Returns the audio object of a sound and creates it on the first call.
+     * @param {string} name - Name of the sound in SOUNDS.
+     * @returns {HTMLAudioElement} The audio object of this sound.
+     */
     static audio(name) {
         if (!Sound.audios[name]) {
             let s = SOUNDS[name];
@@ -62,24 +80,38 @@ class Sound {
         return Sound.audios[name];
     }
 
-    // Lädt alle Sounds vor, damit sie ohne Verzögerung starten
+    /**
+     * Preloads all sounds so they are ready to play immediately.
+     */
     static preload() {
         Object.keys(SOUNDS).forEach((name) => Sound.audio(name).load());
     }
 
-    // Kopie eines Sounds, damit sich mehrere gleichzeitig überlappen können
+    /**
+     * Creates a copy of the sound so the same effect can play several times at once.
+     * @param {string} name - Name of the sound in SOUNDS.
+     * @returns {HTMLAudioElement} Copy with the matching volume.
+     */
     static clone(name) {
         let a = Sound.audio(name).cloneNode();
         a.volume = Sound.volumeOf(name);
         return a;
     }
 
+    /**
+     * Plays an effect once (does nothing while muted).
+     * @param {string} name - Name of the sound in SOUNDS.
+     */
     static play(name) {
         if (Sound.muted) return;
         Sound.clone(name).play().catch(() => {});
     }
 
-    // Spielt einen Sound und ruft danach callback auf (sofort, wenn kein Ton möglich ist)
+    /**
+     * Plays a sound and calls the function afterwards. The callback also runs when muted and on errors.
+     * @param {string} name - Name of the sound in SOUNDS.
+     * @param {Function} callback - Called after the sound has ended.
+     */
     static playThen(name, callback) {
         if (Sound.muted) return callback();
         let a = Sound.clone(name);
@@ -88,20 +120,29 @@ class Sound {
         a.play().catch(callback);
     }
 
-    // Schleife starten (Musik, Schritte)
+    /**
+     * Starts a sound as a continuous loop as soon as sound is on.
+     * @param {string} name - Name of a sound with loop: true.
+     */
     static start(name) {
         Sound.wanted.add(name);
         Sound.refresh();
     }
 
+    /**
+     * Stops a looping sound. Music jumps back to the beginning.
+     * @param {string} name - Name of a sound with loop: true.
+     */
     static stop(name) {
         Sound.wanted.delete(name);
         Sound.refresh();
         let a = Sound.audio(name);
-        if (name.endsWith("Music")) a.currentTime = 0; // Musik beginnt beim nächsten Mal von vorn
+        if (name.endsWith("Music")) a.currentTime = 0;
     }
 
-    // Spielt oder pausiert alle Schleifen passend zu "wanted" und "muted"
+    /**
+     * Syncs all looping sounds with the wanted state: they play when wanted and not muted.
+     */
     static refresh() {
         Object.keys(SOUNDS).forEach((name) => {
             if (!SOUNDS[name].loop) return;
@@ -112,6 +153,9 @@ class Sound {
         });
     }
 
+    /**
+     * Turns sound on or off, saves the setting and updates the button.
+     */
     static toggleMute() {
         Sound.muted = !Sound.muted;
         writeStorage("road180_muted", Sound.muted ? "1" : "0");
@@ -119,13 +163,17 @@ class Sound {
         Sound.updateButton();
     }
 
-    // Zeigt auf dem Mute-Button, ob der Ton an oder aus ist
+    /**
+     * Sets the icon of the sound button to match the muted state.
+     */
     static updateButton() {
         let img = document.getElementById("mute-img");
         if (img) img.src = "img_small/assets/buttons/" + (Sound.muted ? "sound_off" : "sound_on") + ".webp";
     }
 
-    // Browser erlauben Ton erst nach dem ersten Klick oder Tastendruck
+    /**
+     * Sets up sound control: music may start after the first input, M toggles sound, every button click plays the click sound.
+     */
     static unlockOnFirstInput() {
         Sound.updateButton();
         let unlock = () => Sound.refresh();

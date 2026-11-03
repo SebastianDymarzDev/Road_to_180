@@ -1,3 +1,6 @@
+/**
+ * Base class for all game objects with position, images and drawing on the canvas.
+ */
 class MovableObject {
     x = 0;
     y = 0;
@@ -8,13 +11,24 @@ class MovableObject {
     imageCache = {};
     currentImage = 0;
 
+    /**
+     * Creates an image and starts loading it.
+     * @param {string} src - Path to the image.
+     * @returns {HTMLImageElement} The image.
+     */
     static newImage(src) {
         let img = new Image();
         img.src = src;
         return img;
     }
 
-    // Pfade prefix/name_01.webp, prefix/name_02.webp ... (count Stück)
+    /**
+     * Creates paths of the form prefix/name_01.webp, prefix/name_02.webp ...
+     * @param {string} prefix - Folder of the images.
+     * @param {string} name - File name without number and extension.
+     * @param {number} count - Number of images.
+     * @returns {string[]} List of image paths.
+     */
     static framePaths(prefix, name, count) {
         let list = [];
         for (let i = 1; i <= count; i++) {
@@ -23,40 +37,72 @@ class MovableObject {
         return list;
     }
 
+    /**
+     * Loads the main image of the object.
+     * @param {string} path - Path to the image.
+     */
     loadImage(path) {
         this.img = MovableObject.newImage(path);
     }
 
-    // mehrere Bildlisten auf einmal in den Cache laden
+    /**
+     * Loads all images of the lists into the image cache.
+     * @param {...string[]} lists - Lists of image paths.
+     */
     loadImages(...lists) {
         lists.flat().forEach((path) => (this.imageCache[path] = MovableObject.newImage(path)));
     }
 
+    /**
+     * Shows the next image of an animation and wraps around to the first one at the end.
+     * @param {string[]} paths - Image paths of the animation (must be loaded).
+     */
     playAnimation(paths) {
         let i = this.currentImage % paths.length;
         this.img = this.imageCache[paths[i]];
         this.currentImage++;
     }
 
-    static CHARGE_GLOW = "#ffd23c"; // Leuchtfarbe für den aufgeladenen Wurf
+    static CHARGE_GLOW = "#ffd23c";
 
-    // Leuchten um das nächste gezeichnete Bild (gilt bis ctx.restore)
+    /**
+     * Turns on a glow effect for the following drawing commands.
+     * @param {CanvasRenderingContext2D} ctx - Drawing surface.
+     * @param {string} color - Glow color.
+     * @param {number} blur - Glow strength.
+     */
     glow(ctx, color, blur) {
         ctx.shadowColor = color;
         ctx.shadowBlur = blur;
     }
 
-    // Bild nach Zeit: einmal abspielen (ms pro Bild) und beim letzten Bild stehen bleiben
+    /**
+     * Picks the image of an animation that plays once and stays on the last image.
+     * @param {string[]} list - Images of the animation.
+     * @param {number} elapsed - Time since the start in ms.
+     * @param {number} ms - Duration of one image in ms.
+     * @returns {string} The current image.
+     */
     frameOnce(list, elapsed, ms) {
         return list[Math.min(list.length - 1, Math.floor(elapsed / ms))];
     }
 
-    // Bild nach Zeit: Liste immer wieder abspielen
+    /**
+     * Picks the image of an animation that loops endlessly.
+     * @param {string[]} list - Images of the animation.
+     * @param {number} elapsed - Elapsed time in ms.
+     * @param {number} ms - Duration of one image in ms.
+     * @returns {string} The current image.
+     */
     frameLoop(list, elapsed, ms) {
         return list[Math.floor(elapsed / ms) % list.length];
     }
 
-    // y = Fusslinie. Das Bild wird mit seiner Unterkante darauf gesetzt.
+    /**
+     * Draws the image with its center at x and its bottom edge at y. Mirrored when otherDirection is set.
+     * @param {CanvasRenderingContext2D} ctx - Drawing surface.
+     * @param {HTMLImageElement} [img] - Image to draw (default: the main image).
+     */
     draw(ctx, img = this.img) {
         if (!img || !img.complete) return;
         let w = img.naturalWidth;
@@ -72,7 +118,12 @@ class MovableObject {
         ctx.restore();
     }
 
-    // Bild mittig auf (x, y), optional gedreht, skaliert oder gespiegelt
+    /**
+     * Draws the image with its center at x and y, optionally rotated, scaled and mirrored.
+     * @param {CanvasRenderingContext2D} ctx - Drawing surface.
+     * @param {HTMLImageElement} img - Image to draw.
+     * @param {{angle?: number, scale?: number, flip?: boolean}} [options] - Rotation angle in radians, scale factor and mirroring.
+     */
     drawCentered(ctx, img, { angle = 0, scale = 1, flip = false } = {}) {
         if (!img || !img.complete) return;
         let w = img.naturalWidth * scale;

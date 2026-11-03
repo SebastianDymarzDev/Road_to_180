@@ -1,5 +1,11 @@
-// Hintergrund-Ebenen eines Levels. y2 und y3 verschieben Ebene 2 und 3 nach unten.
-// speed: 0 = steht, 1 = bewegt sich mit der Figur, dazwischen = Parallax
+/**
+ * Builds the three background layers of a level. y2 and y3 move layers 2 and 3 downwards. speed: 0 = fixed, 1 = moves with the character, in between = parallax.
+ * @param {number} n - Level number.
+ * @param {number} y2 - Vertical offset of layer 2.
+ * @param {number} y3 - Vertical offset of layer 3.
+ * @param {number[]} [dys3] - Additional offset per image of layer 3.
+ * @returns {{sources: string[], y: number, speed: number, dys?: number[]}[]} The layers from back to front.
+ */
 function levelBackground(n, y2, y3, dys3 = []) {
     let dir = `img_small/level/level${n}/level${n}`;
     return [
@@ -9,8 +15,6 @@ function levelBackground(n, y2, y3, dys3 = []) {
     ];
 }
 
-// Einstellungen pro Level. Neues Level = neuer Eintrag.
-// boss.scale: muss zum Faktor BOSS_MULT in resize_images.py passen
 const LEVELS = {
     1: {
         background: levelBackground(1, 40, 100),
@@ -95,9 +99,9 @@ const LEVELS = {
             bar: "healthbar_level5/boss_healthbar_level5",
             barCount: 11,
             health: 10,
-            angryAt: [6, 2],                        // Phase 1 ab 6 Leben, Phase 2 ab 2 Leben
-            pauses: [2500, 1800, 1000],             // Wurfpause: ruhig, Phase 1, Phase 2
-            angryFrames: [[0, 1], [1, 2]],          // welche Wütend-Bilder (Phase 1, Phase 2)
+            angryAt: [6, 2],
+            pauses: [2500, 1800, 1000],
+            angryFrames: [[0, 1], [1, 2]],
             scale: 1.5,
             hitbox: { w: 120, h: 145 },
             hand: { x: 90, y: 120 },

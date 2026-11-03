@@ -1,6 +1,3 @@
-/* Buttons: Menue-Buttons, Level-Badges, Zurueck-, Ton- und Vollbild-Buttons */
-
-/* Gemeinsame Grundwerte aller Buttons */
 .menu-btn,
 .level-btn,
 #back-btn,
@@ -13,7 +10,6 @@
     cursor: pointer;
 }
 
-/* Alle Button-Bilder: Zoom und rotes Leuchten beim Hovern */
 .menu-btn img,
 .level-btn img,
 #back-btn img,
@@ -40,8 +36,6 @@
     transform: scale(1.08);
 }
 
-/* Menue-Buttons */
-
 .menu-btn {
     margin-bottom: -2.5vh;
 }
@@ -58,8 +52,6 @@
 .menu-btn.play img {
     width: min(480px, 80vw, 43vh);
 }
-
-/* Level-Badges */
 
 .level-btn {
     opacity: 0;
@@ -95,14 +87,10 @@
     filter: brightness(0.35);
 }
 
-/* Zurueck-Buttons */
-
 #back-btn img,
 #game-back-btn img {
     width: min(220px, 22vw, 20vh);
 }
-
-/* Buttons oben am Rand: Zurueck links, Vollbild und Ton rechts */
 
 #back-btn,
 #game-back-btn,
@@ -139,8 +127,6 @@
 #fullscreen-btn {
     right: calc(2vw + var(--icon-size) + 1vw);
 }
-
-/* Zurueck und Vollbild erscheinen nur im Spiel */
 
 #game-back-btn,
 #fullscreen-btn {

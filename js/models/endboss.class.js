@@ -1,19 +1,25 @@
+/**
+ * End boss of a level. Throws projectiles at intervals, gets angry at low health and is briefly invulnerable after a hit. The values come from levels.js.
+ */
 class Endboss extends MovableObject {
-    angryBelow = 2;          // ab so wenigen Leben wird er wütend (wirft schneller)
-    throwPause = 2500;       // ms zwischen zwei Würfen
-    idleFrameTime = 700;     // ms pro Bild in der Ruhe-Animation (größer = langsamer)
-    angryThrowPause = 1500;  // ms zwischen zwei Würfen, wenn er wütend ist
-    active = false;          // wirft erst, wenn die Arena gestartet ist
+    angryBelow = 2;
+    throwPause = 2500;
+    idleFrameTime = 700;
+    angryThrowPause = 1500;
+    active = false;
     dead = false;
-    state = "idle";          // idle, throw, hit, die
+    state = "idle";
     stateStart = 0;
     nextThrow = 0;
     thrown = false;
-    invulnerableUntil = 0;    // bis dahin kein Schaden (nach einem Treffer)
-    INVULNERABLE_TIME = 1000; // so lange ist der Boss nach einem Treffer unverwundbar
-    onThrow = null;          // wird von World gesetzt
+    invulnerableUntil = 0;
+    INVULNERABLE_TIME = 1000;
+    onThrow = null;
 
-    // x = Mitte, cfg = Boss-Einstellungen aus levels.js
+    /**
+     * @param {number} x - Position in world coordinates.
+     * @param {object} cfg - Boss settings from levels.js.
+     */
     constructor(x, cfg) {
         super();
         this.cfg = cfg;
@@ -26,6 +32,10 @@ class Endboss extends MovableObject {
         this.loadAllImages();
     }
 
+    /**
+     * Reads from the settings when the boss gets angry and how long the throw pauses are.
+     * @param {object} cfg - Boss settings from levels.js.
+     */
     readAnger(cfg) {
         this.angryBelow = cfg.angryBelow || 2;
         this.angryAt = cfg.angryAt || [this.angryBelow];
@@ -33,6 +43,9 @@ class Endboss extends MovableObject {
         this.angryFrames = cfg.angryFrames || [];
     }
 
+    /**
+     * Loads all images of the boss.
+     */
     loadAllImages() {
         let f = this.cfg.frames;
         this.IMAGES_IDLE = this.paths("idle", "idle", f.idle);
@@ -44,35 +57,63 @@ class Endboss extends MovableObject {
         this.loadImages(this.IMAGES_IDLE, this.IMAGES_ANGRY, this.IMAGES_THROW, this.IMAGES_HIT, this.IMAGES_DIE);
     }
 
+    /**
+     * Creates the paths of the boss images.
+     * @param {string} folder - Subfolder (idle, angry, throw, hit, die).
+     * @param {string} name - File name without boss prefix, number and extension.
+     * @param {number} count - Number of images.
+     * @returns {string[]} List of image paths.
+     */
     paths(folder, name, count) {
         let prefix = `img_small/character/enemies/endboss/${this.cfg.folder}/${folder}`;
         return MovableObject.framePaths(prefix, `${this.cfg.prefix}_${name}`, count);
     }
 
+    /**
+     * Returns the image path of the projectile.
+     * @returns {string} Path to the image.
+     */
     projectilePath() {
         return `img_small/character/enemies/endboss/${this.cfg.folder}/projectile/${this.cfg.projectile}.webp`;
     }
 
-    // 0 = ruhig, 1 = wütend, 2 = sehr wütend (je nach Leben)
+    /**
+     * Returns the anger level based on the remaining health.
+     * @returns {number} 0 = calm, greater than 0 = angry (higher number = angrier).
+     */
     phase() {
         return this.angryAt.filter((h) => this.health <= h).length;
     }
 
+    /**
+     * Checks whether the boss is angry.
+     * @returns {boolean} true if angry.
+     */
     isAngry() {
         return this.phase() > 0;
     }
 
+    /**
+     * Starts the fight. The first throw follows after 1.5 seconds.
+     */
     start() {
         this.active = true;
         this.nextThrow = Date.now() + 1500;
     }
 
+    /**
+     * Changes the state and remembers the time.
+     * @param {"idle"|"hit"|"throw"|"die"} state - New state.
+     */
     setState(state) {
         this.state = state;
         this.stateStart = Date.now();
     }
 
-    // Dart getroffen. Beim Boss zählt der Schaden direkt (normal 1, stark 2).
+    /**
+     * Handles a hit. The boss is briefly invulnerable afterwards. At 0 health it dies.
+     * @param {number} damage - Damage of the hit.
+     */
     hit(damage) {
         if (!this.active || this.dead || this.isInvulnerable()) return;
         this.invulnerableUntil = Date.now() + this.INVULNERABLE_TIME;
@@ -81,14 +122,21 @@ class Endboss extends MovableObject {
             this.dead = true;
             this.setState("die");
         } else if (this.state === "idle") {
-            this.setState("hit"); // nur in der Ruhe: ein Wurf wird nie unterbrochen, ein Treffer startet nichts neu
+            this.setState("hit");
         }
     }
 
+    /**
+     * Checks whether the boss is currently invulnerable.
+     * @returns {boolean} true if hits have no effect.
+     */
     isInvulnerable() {
         return Date.now() < this.invulnerableUntil;
     }
 
+    /**
+     * One step: throws after the throw pause and ends the hit state.
+     */
     update() {
         if (!this.active || this.dead) return;
         let now = Date.now();
@@ -99,10 +147,14 @@ class Endboss extends MovableObject {
         } else if (this.state === "throw") {
             this.updateThrow(elapsed);
         } else if (this.state === "hit" && elapsed >= 450) {
-            this.setState("idle"); // der Wurfrhythmus (nextThrow) bleibt unverändert
+            this.setState("idle");
         }
     }
 
+    /**
+     * Performs the throw and ends it with a pause that matches the anger level.
+     * @param {number} elapsed - Time since the start of the throw in ms.
+     */
     updateThrow(elapsed) {
         if (!this.thrown && elapsed >= 100) {
             this.thrown = true;
@@ -112,17 +164,29 @@ class Endboss extends MovableObject {
         if (elapsed >= 450) this.endState(this.pauses[Math.min(this.phase(), this.pauses.length - 1)]);
     }
 
+    /**
+     * Returns to the idle state and sets the next throw.
+     * @param {number} pause - Time until the next throw in ms.
+     */
     endState(pause) {
         this.setState("idle");
         this.nextThrow = Date.now() + pause;
     }
 
+    /**
+     * Returns the hit area.
+     * @returns {{x: number, y: number, w: number, h: number}} Rectangle in world coordinates.
+     */
     getHitbox() {
         let s = this.scale;
         let box = this.cfg.hitbox;
         return { x: this.x - (box.w / 2) * s, y: this.y - (box.h + 5) * s, w: box.w * s, h: box.h * s };
     }
 
+    /**
+     * Picks the image matching the state.
+     * @returns {HTMLImageElement} The current image.
+     */
     frameImage() {
         let elapsed = Date.now() - this.stateStart;
         let path;
@@ -133,6 +197,10 @@ class Endboss extends MovableObject {
         return this.imageCache[path];
     }
 
+    /**
+     * Picks the image in the idle state (when angry, with the angry images of the current level).
+     * @returns {string} Path of the image.
+     */
     idlePath() {
         let list = this.IMAGES_IDLE;
         if (this.isAngry()) {
@@ -143,7 +211,10 @@ class Endboss extends MovableObject {
         return this.frameLoop(list, Date.now(), this.idleFrameTime);
     }
 
-    // blinkt, solange er unverwundbar ist
+    /**
+     * Draws the boss. It blinks while invulnerable.
+     * @param {CanvasRenderingContext2D} ctx - Drawing surface.
+     */
     draw(ctx) {
         ctx.save();
         if (this.isInvulnerable() && Math.floor(Date.now() / 100) % 2 === 0) ctx.globalAlpha = 0.4;
