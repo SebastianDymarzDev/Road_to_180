@@ -9,15 +9,10 @@ function init() {
     world = new World(canvas, keyboard, currentLevel);
 }
 
-// Höchstes freigeschaltetes Level (im Browser gespeichert)
-function getUnlockedLevel() {
-    return parseInt(readStorage("road180_unlocked", 1)) || 1;
-}
-
 // Schaltet ein Level frei, aber nur wenn es in levels.js existiert
 function unlockLevel(level) {
     if (!LEVELS[level] || level <= getUnlockedLevel()) return;
-    writeStorage("road180_unlocked", level);
+    writeStorage(UNLOCKED_KEY, level);
 }
 
 // Badges im Level-Menü: freigeschaltete Level sind anklickbar, die anderen dunkel
@@ -36,6 +31,8 @@ function showMenu() {
     updateLevelButtons();
     Sound.unlockOnFirstInput();
     Sound.preload();
+    initTouch();
+    preloadTouchImages();
     Sound.start("menuMusic");
     setTimeout(() => {
         document.getElementById("menu").classList.add("compact");

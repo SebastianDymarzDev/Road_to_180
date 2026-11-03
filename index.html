@@ -10,6 +10,7 @@
     <link rel="stylesheet" href="css/buttons.css">
     <link rel="stylesheet" href="css/menu.css">
     <link rel="stylesheet" href="css/game.css">
+    <link rel="stylesheet" href="css/touch.css">
 
     <title>Road to 180</title>
 
@@ -26,6 +27,7 @@
     <script src="js/audio.js"></script>
     <script src="js/levels.js"></script>
     <script src="js/models/world.class.js"></script>
+    <script src="js/touch.js"></script>
     <script src="js/game.js"></script>
 </head>
 
@@ -35,11 +37,12 @@
         <img id="menu-logo" src="img_small/assets/logo_with_player.webp" alt="Road to 180">
 
         <div id="menu-buttons">
-            <button class="menu-btn play" onclick="startLevel(getUnlockedLevel())"><img src="img_small/assets/buttons/play_button.webp"
-                    alt="Spielen"></button>
+            <button class="menu-btn play" onclick="startLevel(getUnlockedLevel())"><img
+                    src="img_small/assets/buttons/play_button.webp" alt="Spielen"></button>
             <button class="menu-btn" onclick="showLevelSelect()"><img
                     src="img_small/assets/buttons/select_level_button.webp" alt="Level wählen"></button>
-            <button class="menu-btn"><img src="img_small/assets/buttons/options_button.webp" alt="Optionen"></button>
+            <button class="menu-btn" onclick="location.href = 'options.html'"><img
+                    src="img_small/assets/buttons/options_button.webp" alt="Optionen"></button>
             <button class="menu-btn" onclick="location.href = 'imprint.html'"><img
                     src="img_small/assets/buttons/credits_button.webp" alt="Credits"></button>
         </div>
@@ -65,6 +68,28 @@
                 src="img_small/assets/buttons/fullscreen_enter.webp" alt="Vollbild"></button>
         <button id="mute-btn" onclick="Sound.toggleMute(); this.blur()"><img id="mute-img"
                 src="img_small/assets/buttons/sound_on.webp" alt="Ton an/aus"></button>
+        <div id="touch-controls">
+            <div id="touch-left">
+                <div class="touch-btn" data-key="ArrowLeft" data-img="left"><img
+                        src="img_small/assets/buttons/left_01.webp" alt="Links"></div>
+                <div class="touch-btn" data-key="ArrowRight" data-img="right"><img
+                        src="img_small/assets/buttons/right_01.webp" alt="Rechts"></div>
+            </div>
+            <div id="touch-right">
+                <div class="touch-btn" id="touch-charge" data-key="ShiftLeft" data-img="charge"><img
+                        src="img_small/assets/buttons/charge_01.webp" alt="Aufladen"></div>
+                <div class="touch-btn" data-key="ArrowUp" data-img="jump"><img
+                        src="img_small/assets/buttons/jump_01.webp" alt="Springen"></div>
+                <div class="touch-btn" data-key="Space" data-img="throw"><img
+                        src="img_small/assets/buttons/throw_01.webp" alt="Werfen"></div>
+                <div class="touch-btn" data-key="ArrowDown" data-img="duck"><img
+                        src="img_small/assets/buttons/duck_01.webp" alt="Ducken"></div>
+            </div>
+        </div>
+        <div id="rotate-hint">
+            <div>Bitte Gerät drehen</div>
+            <span>Road to 180 läuft im Querformat</span>
+        </div>
         <div id="game">
             <canvas id="canvas" width="720" height="480"></canvas>
         </div>

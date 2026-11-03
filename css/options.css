@@ -1,0 +1,83 @@
+/* Optionen: ergänzt imprint.css (Hintergrund, Textfeld, Zurück-Button) */
+
+.volume {
+    display: grid;
+    grid-template-columns: 90px 1fr 60px;
+    align-items: center;
+    gap: 12px;
+    margin: 12px 0;
+}
+
+.volume input {
+    accent-color: #ff3b1f;
+}
+
+.volume span {
+    text-align: right;
+}
+
+#controls {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+#controls td {
+    padding: 6px 8px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+#controls td:last-child {
+    color: #ffd23c;
+    font-weight: bold;
+    text-align: right;
+}
+
+/* Buttons im Spielstil (Seite und Dialog) */
+.game-btn {
+    font-family: "Permanent Marker", sans-serif;
+    font-size: 18px;
+    color: #ffd23c;
+    background: #1a0000;
+    border: 2px solid #ff1e27;
+    border-radius: 8px;
+    padding: 8px 16px;
+    cursor: pointer;
+    transition: box-shadow 0.15s ease-out;
+}
+
+.game-btn:hover {
+    box-shadow: 0 0 5px #ff1e27, 0 0 12px rgba(255, 30, 39, 0.8);
+}
+
+.game-btn.danger {
+    background: #b3121a;
+    color: white;
+}
+
+/* Rückfrage-Dialog: mittig, abgedunkelter Hintergrund */
+#reset-dialog {
+    width: min(420px, 90vw);
+    box-sizing: border-box;
+    padding: 24px;
+    text-align: center;
+    color: #eee;
+    background: #120000;
+    border: 2px solid #ff1e27;
+    border-radius: 12px;
+    box-shadow: 0 0 20px rgba(255, 30, 39, 0.6);
+}
+
+#reset-dialog::backdrop {
+    background: rgba(0, 0, 0, 0.75);
+}
+
+#reset-dialog h2 {
+    margin-top: 0;
+}
+
+.dialog-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 16px;
+    margin-top: 20px;
+}

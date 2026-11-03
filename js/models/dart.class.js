@@ -8,8 +8,7 @@ class Dart extends MovableObject {
         super();
         this.strong = strong;
         this.damage = strong ? 2 : 1;
-        let image = strong ? "projectile_03" : "projectile_01";
-        this.loadImage(`img_small/character/player/projectile/${image}.webp`);
+        this.loadImage("img_small/character/player/projectile/projectile_01.webp");
         this.x = x;
         this.startX = x;
         this.y = y;
@@ -35,14 +34,9 @@ class Dart extends MovableObject {
     // Spitze zeigt in Flugrichtung
     draw(ctx) {
         ctx.save();
-        if (this.strong) this.glow(ctx);
+        if (this.strong) this.glow(ctx, MovableObject.CHARGE_GLOW, 28);
         let angle = Math.atan2(this.speedY, this.speed);
         this.drawCentered(ctx, this.img, { angle: angle, scale: this.strong ? 1.4 : 1, flip: this.otherDirection });
         ctx.restore();
     }
-
-    glow(ctx) {
-        ctx.shadowColor = "#ff3b1f";
-        ctx.shadowBlur = 18;
-    }
-}
+}

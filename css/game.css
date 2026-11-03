@@ -1,7 +1,13 @@
 /* Spiel: Logo oben, Canvas aufklappen (muss nach menu.css geladen werden) */
 
+/* Größen im Spiel: Logo und Spielfeld passen sich dem Fenster an (nie größer als das Original) */
+#menu.playing {
+    --logo-w: min(360px, 60vw, 40vh);
+    --game-w: min(720px, calc(100vw - 4px), calc((100vh - var(--logo-w) / 1.78 - 30px) * 1.5 - 6px));
+}
+
 #menu.playing #menu-logo {
-    width: min(360px, 60vw, 55vh, max(120px, calc((100vh - 560px) * 1.78)));
+    width: var(--logo-w);
 }
 
 #menu.playing #menu-buttons,
@@ -28,7 +34,7 @@
 }
 
 #menu.playing #game {
-    height: 484px;
+    height: calc(var(--game-w) * 2 / 3 + 4px); /* + 4px Rahmen */
     opacity: 1;
     visibility: visible;
     transform: scale(1);
@@ -37,6 +43,8 @@
 
 canvas {
     display: block;
+    width: var(--game-w);
+    aspect-ratio: 3 / 2;
     background-color: black;
     border: 2px solid #d4141c;
 }

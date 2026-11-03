@@ -1,14 +1,17 @@
 class Keyboard {
     // Hier ändern, wenn du die Belegung wechseln willst (event.code)
     static KEYS = {
-        LEFT: ["KeyA"],
-        RIGHT: ["KeyD"],
-        DUCK: ["KeyS"],
-        THROW: ["KeyF"],
-        CHARGE: ["ShiftLeft"],
-        JUMP: ["Space", "KeyW"],
+        LEFT: ["KeyA", "ArrowLeft"],
+        RIGHT: ["KeyD", "ArrowRight"],
+        DUCK: ["KeyS", "ArrowDown"],
+        THROW: ["Space", "KeyF"],
+        CHARGE: ["ShiftLeft", "ShiftRight", "AltLeft", "AltRight"],
+        JUMP: ["KeyW", "ArrowUp"],
         RESTART: ["Enter"],
     };
+
+    // Tasten, die der Browser sonst selbst nutzt (Scrollen, Alt = Menüleiste)
+    static BLOCKED = ["Space", "ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "AltLeft", "AltRight"];
 
     pressed = {};
     pressedOnce = {}; // Tastendruck seit der letzten Abfrage (auch sehr kurze)
@@ -16,16 +19,23 @@ class Keyboard {
 
     constructor() {
         window.addEventListener("keydown", (e) => {
-            if (e.code === "Space") e.preventDefault();
+            if (Keyboard.BLOCKED.includes(e.code)) e.preventDefault(); // Browser-Standardverhalten verhindern
             if (e.code === "Enter" && document.getElementById("menu").classList.contains("playing")) e.preventDefault();
-            this.pressed[e.code] = true;
-            this.lastInput = Date.now();
-            if (!e.repeat) this.pressedOnce[e.code] = true;
+            this.press(e.code, e.repeat);
         });
-        window.addEventListener("keyup", (e) => {
-            this.pressed[e.code] = false;
-        });
+        window.addEventListener("keyup", (e) => this.release(e.code));
         window.addEventListener("blur", () => (this.pressed = {}));
+    }
+
+    // Taste drücken (Tastatur und Bildschirm-Tasten). Halten zählt nur einmal für wasPressed.
+    press(code, isRepeat = false) {
+        this.pressed[code] = true;
+        this.lastInput = Date.now();
+        if (!isRepeat) this.pressedOnce[code] = true;
+    }
+
+    release(code) {
+        this.pressed[code] = false;
     }
 
     // true, wenn die Taste seit der letzten Abfrage gedrückt wurde (verbraucht den Tastendruck)

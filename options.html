@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="de">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="img_small/favicon/favicon.ico">
+    <link rel="stylesheet" href="css/imprint.css">
+    <link rel="stylesheet" href="css/options.css">
+    <title>Optionen - Road to 180</title>
+
+    <script src="js/models/keyboard.class.js"></script>
+    <script src="js/storage.js"></script>
+    <script src="js/audio.js"></script>
+    <script src="js/options.js"></script>
+</head>
+
+<body onload="initOptions()">
+    <a id="back-link" href="index.html"><img src="img_small/assets/buttons/back_button.webp" alt="Zurück"></a>
+
+    <main>
+        <h1>Optionen</h1>
+
+        <h2>Lautstärke</h2>
+        <label class="volume">Musik
+            <input type="range" id="music-volume" min="0" max="100">
+            <span id="music-value"></span>
+        </label>
+        <label class="volume">Effekte
+            <input type="range" id="fx-volume" min="0" max="100">
+            <span id="fx-value"></span>
+        </label>
+
+        <h2>Steuerung</h2>
+        <table id="controls"></table>
+
+        <h2>Fortschritt</h2>
+        <p>Freigeschaltet bis Level <span id="unlocked"></span></p>
+        <button class="game-btn" onclick="openResetDialog()">Fortschritt zurücksetzen</button>
+    </main>
+
+    <dialog id="reset-dialog">
+        <h2>Fortschritt zurücksetzen?</h2>
+        <p>Alle Level außer Level 1 sind danach wieder gesperrt.</p>
+        <div class="dialog-buttons">
+            <button class="game-btn" onclick="closeResetDialog()">Abbrechen</button>
+            <button class="game-btn danger" onclick="confirmReset()">Zurücksetzen</button>
+        </div>
+    </dialog>
+</body>
+
+</html>

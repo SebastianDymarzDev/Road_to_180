@@ -38,6 +38,14 @@ class MovableObject {
         this.currentImage++;
     }
 
+    static CHARGE_GLOW = "#ffd23c"; // Leuchtfarbe für den aufgeladenen Wurf
+
+    // Leuchten um das nächste gezeichnete Bild (gilt bis ctx.restore)
+    glow(ctx, color, blur) {
+        ctx.shadowColor = color;
+        ctx.shadowBlur = blur;
+    }
+
     // Bild nach Zeit: einmal abspielen (ms pro Bild) und beim letzten Bild stehen bleiben
     frameOnce(list, elapsed, ms) {
         return list[Math.min(list.length - 1, Math.floor(elapsed / ms))];
@@ -76,4 +84,4 @@ class MovableObject {
         ctx.drawImage(img, -w / 2, -h / 2, w, h);
         ctx.restore();
     }
-}
+}

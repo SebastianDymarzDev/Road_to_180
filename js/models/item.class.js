@@ -33,8 +33,7 @@ class Item extends MovableObject {
         let t = Date.now() / 300 + this.phase;
         let bob = Math.sin(t) * 3;                  // sanftes Auf und Ab
         ctx.save();
-        ctx.shadowColor = Item.GLOW[this.type];
-        ctx.shadowBlur = 18 + Math.sin(t * 1.3) * 6; // pulsierender Schein
+        this.glow(ctx, Item.GLOW[this.type], 18 + Math.sin(t * 1.3) * 6); // pulsierender Schein
         ctx.drawImage(this.img, this.x - this.img.naturalWidth / 2, this.y - this.img.naturalHeight / 2 + bob);
         ctx.restore();
     }

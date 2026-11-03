@@ -40,10 +40,18 @@ class Hud extends MovableObject {
         let dartY = Hud.Y + 83 * s + Hud.GAP;  // sichtbare Leistenhöhe = 83 px (Original)
         let coinY = dartY + 82 * s + Hud.GAP;
         this.drawImage(ctx, this.IMAGES_HEALTH[c.maxHealth - c.health], Hud.X, Hud.Y); // 01 = voll (5), 06 = leer (0)
-        this.drawImage(ctx, this.IMAGES_DARTS[c.darts], Hud.X, dartY);                  // 01 = leer (0), 06 = voll (5)
+        this.drawDartBar(ctx, dartY);
         this.drawImage(ctx, this.COIN_FRAME, Hud.X, coinY);
         this.drawBossBar(ctx);
         this.drawCoins(ctx, c.coins, Hud.X + 106 * s, coinY + 44 * s);
+    }
+
+    // dartbar_01 = leer (0), 06 = voll (5); leuchtet rot, solange der starke Wurf aufgeladen ist
+    drawDartBar(ctx, y) {
+        ctx.save();
+        if (this.character.charged) this.glow(ctx, MovableObject.CHARGE_GLOW, 14 + Math.sin(Date.now() / 120) * 8);
+        this.drawImage(ctx, this.IMAGES_DARTS[this.character.darts], Hud.X, y);
+        ctx.restore();
     }
 
     // boss_healthbar_01 = voll (5), _06 = leer (0), oben in der Mitte
@@ -66,4 +74,4 @@ class Hud extends MovableObject {
         ctx.fillText(coins, x, y + offset);
         ctx.restore();
     }
-}
+}

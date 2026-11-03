@@ -226,8 +226,13 @@ class World {
 
     drawWin() {
         if (!this.winVisible() || !this.winImg.complete) return;
-        let text = LEVELS[this.level + 1] ? `ENTER = Level ${this.level + 1}` : "ENTER = Menü";
+        let text = LEVELS[this.level + 1] ? `${this.confirmKey()} = Level ${this.level + 1}` : `${this.confirmKey()} = Menü`;
         this.drawOverlay(this.winImg, Date.now() - this.boss.stateStart - 2000, text);
+    }
+
+    // Auf Touch-Geräten wird getippt statt Enter gedrückt
+    confirmKey() {
+        return matchMedia("(pointer: coarse)").matches ? "TIPPEN" : "ENTER";
     }
 
     // dunkler Schleier, Bild und Text; blendet über 500 ms ein
@@ -266,7 +271,7 @@ class World {
 
     drawLose() {
         if (!this.loseVisible() || !this.loseImg.complete) return;
-        this.drawOverlay(this.loseImg, Date.now() - this.character.deathStart - 1500, "ENTER = Neustart");
+        this.drawOverlay(this.loseImg, Date.now() - this.character.deathStart - 1500, `${this.confirmKey()} = Neustart`);
     }
 
     randomInt(min, max) {
@@ -306,7 +311,8 @@ class World {
     }
 
     dartHitsBoss(dart, box) {
-        if (!this.boss.active || this.boss.dead || !this.overlaps(box, this.boss.getHitbox())) return;
+        if (!this.boss.active || this.boss.dead || this.boss.isInvulnerable()) return; // Dart fliegt durch
+        if (!this.overlaps(box, this.boss.getHitbox())) return;
         this.boss.hit(dart.damage);
         Sound.play(this.config.boss.sounds.hitBoss);
         dart.used = true;

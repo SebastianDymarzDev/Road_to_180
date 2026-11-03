@@ -9,6 +9,8 @@ class Endboss extends MovableObject {
     stateStart = 0;
     nextThrow = 0;
     thrown = false;
+    invulnerableUntil = 0;    // bis dahin kein Schaden (nach einem Treffer)
+    INVULNERABLE_TIME = 1000; // so lange ist der Boss nach einem Treffer unverwundbar
     onThrow = null;          // wird von World gesetzt
 
     // x = Mitte, cfg = Boss-Einstellungen aus levels.js
@@ -72,27 +74,32 @@ class Endboss extends MovableObject {
 
     // Dart getroffen. Beim Boss zählt der Schaden direkt (normal 1, stark 2).
     hit(damage) {
-        if (!this.active || this.dead) return;
+        if (!this.active || this.dead || this.isInvulnerable()) return;
+        this.invulnerableUntil = Date.now() + this.INVULNERABLE_TIME;
         this.health = Math.max(0, this.health - damage);
         if (this.health === 0) {
             this.dead = true;
             this.setState("die");
-        } else {
-            this.setState("hit");
+        } else if (this.state === "idle") {
+            this.setState("hit"); // nur in der Ruhe: ein Wurf wird nie unterbrochen, ein Treffer startet nichts neu
         }
+    }
+
+    isInvulnerable() {
+        return Date.now() < this.invulnerableUntil;
     }
 
     update() {
         if (!this.active || this.dead) return;
         let now = Date.now();
         let elapsed = now - this.stateStart;
-        if (this.state === "idle" && now >= this.nextThrow) {
+        if (this.state !== "throw" && now >= this.nextThrow) {
             this.setState("throw");
             this.thrown = false;
         } else if (this.state === "throw") {
             this.updateThrow(elapsed);
         } else if (this.state === "hit" && elapsed >= 450) {
-            this.endState(1000);
+            this.setState("idle"); // der Wurfrhythmus (nextThrow) bleibt unverändert
         }
     }
 
@@ -136,7 +143,11 @@ class Endboss extends MovableObject {
         return this.frameLoop(list, Date.now(), this.idleFrameTime);
     }
 
+    // blinkt, solange er unverwundbar ist
     draw(ctx) {
+        ctx.save();
+        if (this.isInvulnerable() && Math.floor(Date.now() / 100) % 2 === 0) ctx.globalAlpha = 0.4;
         super.draw(ctx, this.frameImage());
+        ctx.restore();
     }
-}
+}

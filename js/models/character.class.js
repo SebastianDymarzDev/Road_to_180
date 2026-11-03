@@ -9,6 +9,7 @@ class Character extends MovableObject {
     SLEEP_AFTER = 10000; // so viele ms ohne Taste, dann schläft die Figur
     sleepTick = 0;
     throwing = false;
+    charged = false; // starker Wurf aufgeladen, bleibt bis zum nächsten Wurf
     maxHealth = 5;
     health = 5;
     maxDarts = 5;
@@ -106,6 +107,7 @@ class Character extends MovableObject {
         let blink = Date.now() < this.invulnerableUntil && Math.floor(Date.now() / 100) % 2 === 0;
         ctx.save();
         if (blink) ctx.globalAlpha = 0.4;
+        if (this.charged) this.glow(ctx, MovableObject.CHARGE_GLOW, 16 + Math.sin(Date.now() / 120) * 8);
         super.draw(ctx);
         ctx.restore();
     }
@@ -127,8 +129,8 @@ class Character extends MovableObject {
     moveStep() {
         let k = this.activeKeys();
         this.ducking = k.is("DUCK") && !this.isInAir();
+        this.handleCharge(k);
         this.handleThrowKey(k);
-        this.handleChargeSound(k);
         this.walk(k);
         this.jumpAndFall(k);
         this.updateWalkSound(k);
@@ -142,14 +144,15 @@ class Character extends MovableObject {
         if (this.throwKeyDown) return;
         this.throwKeyDown = true; // nur der Tastendruck zählt, nicht das Halten
         if (this.throwing || this.ducking) return;
-        this.throwDart(k.is("CHARGE") && this.darts >= this.maxDarts);
+        this.throwDart(this.charged);
     }
 
-    // starker Wurf aufgeladen: Sound einmal beim Drücken von Shift
-    handleChargeSound(k) {
-        let charging = k.is("CHARGE") && this.darts >= this.maxDarts;
-        if (charging && !this.chargeSounded) Sound.play("charge");
-        this.chargeSounded = charging;
+    // Aufladen: ein Tastendruck genügt, der starke Wurf bleibt bereit bis zum nächsten Wurf
+    handleCharge(k) {
+        let pressed = this.keyboard.wasPressed("CHARGE"); // immer abfragen, damit alte Tastendrücke verfallen
+        if (k !== this.keyboard || !pressed || this.charged || this.darts < this.maxDarts) return;
+        this.charged = true;
+        Sound.play("charge");
     }
 
     walk(k) {
@@ -267,7 +270,7 @@ class Character extends MovableObject {
 
     throwDart(strong) {
         this.throwing = true;
-        if (strong) this.darts = 0;
+        if (strong) { this.darts = 0; this.charged = false; }
         this.img = this.imageCache[this.IMAGES_THROW[0]];
         setTimeout(() => {
             if (this.dead || this.won) return;
@@ -285,4 +288,4 @@ class Character extends MovableObject {
         clearInterval(this.moveInterval);
         clearInterval(this.animInterval);
     }
-}
+}

@@ -26,14 +26,36 @@ const SOUNDS = {
 
 class Sound {
     static muted = readStorage("road180_muted", "0") === "1";
+    static musicVolume = Sound.readVolume("road180_music");
+    static fxVolume = Sound.readVolume("road180_fx");
     static audios = {};        // geladene Audio-Objekte
     static wanted = new Set(); // Schleifen, die gerade laufen sollen
+
+    // Regler-Wert von 0 bis 1 (1 = volle Lautstärke aus SOUNDS)
+    static readVolume(key) {
+        let value = parseFloat(readStorage(key, 1));
+        return isNaN(value) ? 1 : Math.min(1, Math.max(0, value));
+    }
+
+    // Lautstärke eines Sounds: Wert aus SOUNDS mal Regler (Musik oder Effekte)
+    static volumeOf(name) {
+        let slider = name.endsWith("Music") ? Sound.musicVolume : Sound.fxVolume;
+        return SOUNDS[name].volume * slider;
+    }
+
+    // type: "music" oder "fx". Speichert den Wert und gilt sofort auch für laufende Sounds.
+    static setVolume(type, value) {
+        if (type === "music") Sound.musicVolume = value;
+        else Sound.fxVolume = value;
+        writeStorage("road180_" + type, value);
+        Object.keys(Sound.audios).forEach((name) => (Sound.audios[name].volume = Sound.volumeOf(name)));
+    }
 
     static audio(name) {
         if (!Sound.audios[name]) {
             let s = SOUNDS[name];
             let a = new Audio("audio/" + s.file);
-            a.volume = s.volume;
+            a.volume = Sound.volumeOf(name);
             a.loop = !!s.loop;
             Sound.audios[name] = a;
         }
@@ -48,7 +70,7 @@ class Sound {
     // Kopie eines Sounds, damit sich mehrere gleichzeitig überlappen können
     static clone(name) {
         let a = Sound.audio(name).cloneNode();
-        a.volume = SOUNDS[name].volume;
+        a.volume = Sound.volumeOf(name);
         return a;
     }
 
