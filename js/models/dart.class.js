@@ -35,12 +35,12 @@ class Dart extends MovableObject {
 
     /**
      * Returns the hit area.
-     * @returns {{x: number, y: number, w: number, h: number}} Rectangle in world coordinates.
+     * @returns {{x: number, y: number, width: number, height: number}} Rectangle in world coordinates.
      */
     getHitbox() {
-        let w = this.img.naturalWidth;
-        let h = this.img.naturalHeight * 0.8;
-        return { x: this.x - w / 2, y: this.y - h / 2, w: w, h: h };
+        let width = this.img.naturalWidth;
+        let height = this.img.naturalHeight * 0.8;
+        return { x: this.x - width / 2, y: this.y - height / 2, width, height };
     }
 
     /**

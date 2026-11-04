@@ -67,7 +67,7 @@ class Keyboard {
      * @returns {number} Time in ms.
      */
     idleTime() {
-        if (Object.values(this.pressed).some((v) => v)) return 0;
+        if (Object.values(this.pressed).some((isDown) => isDown)) return 0;
         return Date.now() - this.lastInput;
     }
 

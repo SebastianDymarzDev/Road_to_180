@@ -23,8 +23,8 @@ class BossProjectile extends MovableObject {
         this.y = y;
         let startSpeedY = -flight.lift;
         let drop = targetY - y;
-        let T = (-startSpeedY + Math.sqrt(Math.max(0, startSpeedY * startSpeedY + 2 * this.gravity * drop))) / this.gravity;
-        this.speedX = (targetX - x) / T;
+        let flightTime = (-startSpeedY + Math.sqrt(Math.max(0, startSpeedY * startSpeedY + 2 * this.gravity * drop))) / this.gravity;
+        this.speedX = (targetX - x) / flightTime;
         this.speedY = startSpeedY;
     }
 
@@ -49,10 +49,10 @@ class BossProjectile extends MovableObject {
 
     /**
      * Returns the hit area.
-     * @returns {{x: number, y: number, w: number, h: number}} Rectangle in world coordinates.
+     * @returns {{x: number, y: number, width: number, height: number}} Rectangle in world coordinates.
      */
     getHitbox() {
-        return { x: this.x - 22, y: this.y - 18, w: 44, h: 36 };
+        return { x: this.x - 22, y: this.y - 18, width: 44, height: 36 };
     }
 
     /**

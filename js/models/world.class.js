@@ -78,8 +78,8 @@ class World extends WorldCollisions {
      * @returns {BossProjectile} The projectile.
      */
     newProjectile(x, y) {
-        let c = this.character;
-        return new BossProjectile(x, y, c.x, c.y - 100, this.boss.projectilePath(), this.config.boss.flight);
+        let character = this.character;
+        return new BossProjectile(x, y, character.x, character.y - 100, this.boss.projectilePath(), this.config.boss.flight);
     }
 
     /**
@@ -103,28 +103,28 @@ class World extends WorldCollisions {
         this.checkArena();
         this.boss.update();
         this.updateProjectiles();
-        this.enemies.forEach((e) => e.update(this.character));
+        this.enemies.forEach((enemy) => enemy.update(this.character));
         this.checkItems();
         this.checkDartHits();
         this.checkEnemyContact();
-        this.enemies = this.enemies.filter((e) => !e.removable);
+        this.enemies = this.enemies.filter((enemy) => !enemy.removable);
     }
 
     /**
      * Moves the darts and removes used ones.
      */
     updateDarts() {
-        this.darts.forEach((d) => d.move());
-        this.darts = this.darts.filter((d) => !d.isGone() && !d.used);
+        this.darts.forEach((dart) => dart.move());
+        this.darts = this.darts.filter((dart) => !dart.isGone() && !dart.used);
     }
 
     /**
      * Moves the boss projectiles, checks hits and removes used ones.
      */
     updateProjectiles() {
-        this.projectiles.forEach((m) => m.move());
+        this.projectiles.forEach((projectile) => projectile.move());
         this.checkProjectileHits();
-        this.projectiles = this.projectiles.filter((m) => !m.isGone() && !m.used);
+        this.projectiles = this.projectiles.filter((projectile) => !projectile.isGone() && !projectile.used);
     }
 
     /**
@@ -141,7 +141,7 @@ class World extends WorldCollisions {
         do {
             x = minX + Math.random() * (maxX - minX);
             tries++;
-        } while (tries < 50 && list.some((o) => Math.abs(o.x - x) < gap));
+        } while (tries < 50 && list.some((other) => Math.abs(other.x - x) < gap));
         return x;
     }
 

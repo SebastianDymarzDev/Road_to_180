@@ -52,3 +52,7 @@ canvas:fullscreen {
     object-fit: contain;
     border: none;
 }
+
+.resizing * {
+    transition: none !important;
+}

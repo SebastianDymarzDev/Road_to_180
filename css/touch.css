@@ -98,3 +98,27 @@
         opacity: 0.8;
     }
 }
+
+@media (pointer: coarse) {
+    #menu.immersive {
+        --game-w: min(100vw, 150vh);
+        background: black;
+    }
+
+    #menu.immersive #menu-logo {
+        display: none;
+    }
+
+    #menu.immersive canvas {
+        border: none;
+    }
+
+    #menu.immersive #game {
+        height: calc(var(--game-w) * 2 / 3);
+    }
+
+    #game-back-btn,
+    #mute-btn {
+        z-index: 10;
+    }
+}

@@ -14,6 +14,7 @@ class Endboss extends MovableObject {
     thrown = false;
     invulnerableUntil = 0;
     INVULNERABLE_TIME = 1000;
+    SHOT_GAP = 250;
     onThrow = null;
 
     /**
@@ -47,12 +48,12 @@ class Endboss extends MovableObject {
      * Loads all images of the boss.
      */
     loadAllImages() {
-        let f = this.cfg.frames;
-        this.IMAGES_IDLE = this.paths("idle", "idle", f.idle);
-        this.IMAGES_ANGRY = this.paths("angry", "angry", f.angry);
-        this.IMAGES_THROW = this.paths("throw", this.cfg.throwName, f.throw);
-        this.IMAGES_HIT = this.paths("hit", "hit", f.hit);
-        this.IMAGES_DIE = this.paths("die", "die", f.die);
+        let frames = this.cfg.frames;
+        this.IMAGES_IDLE = this.paths("idle", "idle", frames.idle);
+        this.IMAGES_ANGRY = this.paths("angry", "angry", frames.angry);
+        this.IMAGES_THROW = this.paths("throw", this.cfg.throwName, frames.throw);
+        this.IMAGES_HIT = this.paths("hit", "hit", frames.hit);
+        this.IMAGES_DIE = this.paths("die", "die", frames.die);
         this.loadImage(this.IMAGES_IDLE[0]);
         this.loadImages(this.IMAGES_IDLE, this.IMAGES_ANGRY, this.IMAGES_THROW, this.IMAGES_HIT, this.IMAGES_DIE);
     }
@@ -82,7 +83,7 @@ class Endboss extends MovableObject {
      * @returns {number} 0 = calm, greater than 0 = angry (higher number = angrier).
      */
     phase() {
-        return this.angryAt.filter((h) => this.health <= h).length;
+        return this.angryAt.filter((threshold) => this.health <= threshold).length;
     }
 
     /**
@@ -156,13 +157,30 @@ class Endboss extends MovableObject {
      * @param {number} elapsed - Time since the start of the throw in ms.
      */
     updateThrow(elapsed) {
-        if (!this.thrown && elapsed >= 100) {
-            this.thrown = true;
-            Sound.play(this.cfg.sounds.throw);
-            if (this.onThrow) this.onThrow(this.x - this.cfg.hand.x * this.scale, this.y - this.cfg.hand.y * this.scale);
-        }
-        if (elapsed >= 450) this.endState(this.pauses[Math.min(this.phase(), this.pauses.length - 1)]);
+    if (!this.thrown && elapsed >= 100) {
+        this.thrown = true;
+        this.fireVolley();
     }
+    if (elapsed >= 450) this.endState(this.pauses[Math.min(this.phase(), this.pauses.length - 1)]);
+}
+
+/**
+ * Throws one projectile more per anger level (1, 2 or 3), one after another.
+ */
+fireVolley() {
+    for (let shot = 0; shot <= this.phase(); shot++) {
+        setTimeout(() => this.fireShot(), shot * this.SHOT_GAP);
+    }
+}
+
+/**
+ * Throws a single projectile from the hand of the boss.
+ */
+fireShot() {
+    if (this.dead || !this.onThrow) return;
+    Sound.play(this.cfg.sounds.throw);
+    this.onThrow(this.x - this.cfg.hand.x * this.scale, this.y - this.cfg.hand.y * this.scale);
+}
 
     /**
      * Returns to the idle state and sets the next throw.
@@ -175,12 +193,12 @@ class Endboss extends MovableObject {
 
     /**
      * Returns the hit area.
-     * @returns {{x: number, y: number, w: number, h: number}} Rectangle in world coordinates.
+     * @returns {{x: number, y: number, width: number, height: number}} Rectangle in world coordinates.
      */
     getHitbox() {
-        let s = this.scale;
+        let scale = this.scale;
         let box = this.cfg.hitbox;
-        return { x: this.x - (box.w / 2) * s, y: this.y - (box.h + 5) * s, w: box.w * s, h: box.h * s };
+        return { x: this.x - (box.width / 2) * scale, y: this.y - (box.height + 5) * scale, width: box.width * scale, height: box.height * scale };
     }
 
     /**

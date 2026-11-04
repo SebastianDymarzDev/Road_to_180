@@ -30,12 +30,12 @@ class Item extends MovableObject {
 
     /**
      * Returns the hit area (70 % of the image size).
-     * @returns {{x: number, y: number, w: number, h: number}} Rectangle in world coordinates.
+     * @returns {{x: number, y: number, width: number, height: number}} Rectangle in world coordinates.
      */
     getHitbox() {
-        let w = this.img.naturalWidth * 0.7;
-        let h = this.img.naturalHeight * 0.7;
-        return { x: this.x - w / 2, y: this.y - h / 2, w: w, h: h };
+        let width = this.img.naturalWidth * 0.7;
+        let height = this.img.naturalHeight * 0.7;
+        return { x: this.x - width / 2, y: this.y - height / 2, width, height };
     }
 
     /**
@@ -44,10 +44,10 @@ class Item extends MovableObject {
      */
     draw(ctx) {
         if (!this.img || !this.img.complete) return;
-        let t = Date.now() / 300 + this.phase;
-        let bob = Math.sin(t) * 3;
+        let time = Date.now() / 300 + this.phase;
+        let bob = Math.sin(time) * 3;
         ctx.save();
-        this.glow(ctx, Item.GLOW[this.type], 18 + Math.sin(t * 1.3) * 6);
+        this.glow(ctx, Item.GLOW[this.type], 18 + Math.sin(time * 1.3) * 6);
         ctx.drawImage(this.img, this.x - this.img.naturalWidth / 2, this.y - this.img.naturalHeight / 2 + bob);
         ctx.restore();
     }

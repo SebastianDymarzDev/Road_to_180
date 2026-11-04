@@ -44,10 +44,23 @@ function showMenu() {
     Sound.preload();
     initTouch();
     preloadTouchImages();
+    disableTransitionsOnResize();
     Sound.start("menuMusic");
     setTimeout(() => {
         document.getElementById("menu").classList.add("compact");
     }, 1500);
+}
+
+/**
+ * Disables all transitions while the window is being resized, so the layout follows immediately.
+ */
+function disableTransitionsOnResize() {
+    let timer;
+    window.addEventListener("resize", () => {
+        document.body.classList.add("resizing");
+        clearTimeout(timer);
+        timer = setTimeout(() => document.body.classList.remove("resizing"), 100);
+    });
 }
 
 /**
@@ -70,6 +83,7 @@ function hideLevelSelect() {
  * @param {number} level - Level number.
  */
 function startLevel(level) {
+    if (isSmallTouchDevice()) enterImmersive();
     currentLevel = level;
     let menu = document.getElementById("menu");
     menu.classList.remove("levels");
@@ -79,6 +93,23 @@ function startLevel(level) {
     Sound.stop("gameMusic");
     startGameMusicAfterJingle();
     init();
+}
+
+/**
+ * Checks whether the device is a touch device whose screen is smaller than the game field.
+ * @returns {boolean} true if the game should fill the whole screen.
+ */
+function isSmallTouchDevice() {
+    return matchMedia("(pointer: coarse)").matches && Math.min(screen.width, screen.height) < 480;
+}
+
+/**
+ * Switches to the full-screen layout and requests fullscreen (this only works right after a tap).
+ */
+function enterImmersive() {
+    let menu = document.getElementById("menu");
+    menu.classList.add("immersive");
+    if (!document.fullscreenElement && menu.requestFullscreen) menu.requestFullscreen().catch(() => {});
 }
 
 /**
@@ -111,7 +142,7 @@ function toggleFullscreen() {
  */
 function leaveGame() {
     if (document.fullscreenElement) document.exitFullscreen();
-    document.getElementById("menu").classList.remove("playing");
+    document.getElementById("menu").classList.remove("playing", "immersive");
     if (world) { world.stop(); world = null; }
     levelRun++;
     Sound.stop("gameMusic");

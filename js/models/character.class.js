@@ -74,11 +74,11 @@ class Character extends MovableObject {
 
     /**
      * Returns the hit area. It is lower while ducking.
-     * @returns {{x: number, y: number, w: number, h: number}} Rectangle in world coordinates.
+     * @returns {{x: number, y: number, width: number, height: number}} Rectangle in world coordinates.
      */
     getHitbox() {
-        let h = this.ducking ? 90 : 135;
-        return { x: this.x - 25, y: this.y - 4 - h, w: 50, h: h };
+        let height = this.ducking ? 90 : 135;
+        return { x: this.x - 25, y: this.y - 4 - height, width: 50, height };
     }
 
     /**
@@ -175,21 +175,21 @@ class Character extends MovableObject {
      * One movement step: ducking, charging, throwing, walking, jumping and walking sound.
      */
     moveStep() {
-        let k = this.activeKeys();
-        this.ducking = k.is("DUCK") && !this.isInAir();
-        this.handleCharge(k);
-        this.handleThrowKey(k);
-        this.walk(k);
-        this.jumpAndFall(k);
-        this.updateWalkSound(k);
+        let input = this.activeKeys();
+        this.ducking = input.is("DUCK") && !this.isInAir();
+        this.handleCharge(input);
+        this.handleThrowKey(input);
+        this.walk(input);
+        this.jumpAndFall(input);
+        this.updateWalkSound(input);
     }
 
     /**
      * Throws one dart per key press (a held key does not throw again).
-     * @param {Keyboard|object} k - Active input.
+     * @param {Keyboard|object} input - Active input.
      */
-    handleThrowKey(k) {
-        if (!k.is("THROW")) {
+    handleThrowKey(input) {
+        if (!input.is("THROW")) {
             this.throwKeyDown = false;
             return;
         }
@@ -201,33 +201,33 @@ class Character extends MovableObject {
 
     /**
      * Charges the throw with a single key press when all darts are collected.
-     * @param {Keyboard|object} k - Active input.
+     * @param {Keyboard|object} input - Active input.
      */
-    handleCharge(k) {
+    handleCharge(input) {
         let pressed = this.keyboard.wasPressed("CHARGE");
-        if (k !== this.keyboard || !pressed || this.charged || this.darts < this.maxDarts) return;
+        if (input !== this.keyboard || !pressed || this.charged || this.darts < this.maxDarts) return;
         this.charged = true;
         Sound.play("charge");
     }
 
     /**
      * Walks left or right and keeps the character within the allowed area.
-     * @param {Keyboard|object} k - Active input.
+     * @param {Keyboard|object} input - Active input.
      */
-    walk(k) {
+    walk(input) {
         if (!this.ducking) {
-            if (k.is("RIGHT")) { this.x += this.speed; this.otherDirection = false; }
-            if (k.is("LEFT")) { this.x -= this.speed; this.otherDirection = true; }
+            if (input.is("RIGHT")) { this.x += this.speed; this.otherDirection = false; }
+            if (input.is("LEFT")) { this.x -= this.speed; this.otherDirection = true; }
         }
         this.x = Math.max(this.minX, Math.min(this.maxX, this.x));
     }
 
     /**
      * Jumps from the ground when the key is pressed and lets the character fall in the air.
-     * @param {Keyboard|object} k - Active input.
+     * @param {Keyboard|object} input - Active input.
      */
-    jumpAndFall(k) {
-        if (k.is("JUMP") && !this.isInAir() && !this.ducking) {
+    jumpAndFall(input) {
+        if (input.is("JUMP") && !this.isInAir() && !this.ducking) {
             this.speedY = this.jumpPower;
             Sound.play("jump");
         }
@@ -248,10 +248,10 @@ class Character extends MovableObject {
 
     /**
      * Starts or stops the walking sound while the character walks on the ground.
-     * @param {Keyboard|object} k - Active input.
+     * @param {Keyboard|object} input - Active input.
      */
-    updateWalkSound(k) {
-        let walking = !this.isInAir() && !this.ducking && (k.is("LEFT") || k.is("RIGHT"));
+    updateWalkSound(input) {
+        let walking = !this.isInAir() && !this.ducking && (input.is("LEFT") || input.is("RIGHT"));
         if (walking === this.walkSounding) return;
         this.walkSounding = walking;
         if (walking) Sound.start("walk");
@@ -262,14 +262,14 @@ class Character extends MovableObject {
      * One animation step: chooses the matching animation for the current state.
      */
     animationStep() {
-        let k = this.activeKeys();
+        let input = this.activeKeys();
         if (this.locked) this.keyboard.lastInput = Date.now();
         if (this.won) return this.animateWin();
         if (this.dead) return this.animateDeath();
         if (Date.now() < this.hurtUntil) return this.animateHurt();
         if (this.throwing) return this.setSleeping(false);
-        if (!this.isInAir() && !this.ducking && this.shouldSleep(k)) return this.animateSleep();
-        this.animateAwake(k);
+        if (!this.isInAir() && !this.ducking && this.shouldSleep(input)) return this.animateSleep();
+        this.animateAwake(input);
         this.setSleeping(false);
     }
 
@@ -297,11 +297,11 @@ class Character extends MovableObject {
 
     /**
      * Checks whether the character should fall asleep (stands still without input for a long time).
-     * @param {Keyboard|object} k - Active input.
+     * @param {Keyboard|object} input - Active input.
      * @returns {boolean} true if it should sleep.
      */
-    shouldSleep(k) {
-        return !k.is("LEFT") && !k.is("RIGHT") && !this.locked && this.keyboard.idleTime() > this.SLEEP_AFTER;
+    shouldSleep(input) {
+        return !input.is("LEFT") && !input.is("RIGHT") && !this.locked && this.keyboard.idleTime() > this.SLEEP_AFTER;
     }
 
     /**
@@ -318,9 +318,9 @@ class Character extends MovableObject {
 
     /**
      * Plays the animation of the awake character: jump, duck or ground.
-     * @param {Keyboard|object} k - Active input.
+     * @param {Keyboard|object} input - Active input.
      */
-    animateAwake(k) {
+    animateAwake(input) {
         if (this.isInAir()) {
             this.duckStep = 0;
             this.playAnimation(this.IMAGES_JUMP);
@@ -328,7 +328,7 @@ class Character extends MovableObject {
             this.animateDuck();
         } else {
             this.duckStep = 0;
-            this.animateGround(k);
+            this.animateGround(input);
         }
     }
 
@@ -343,10 +343,10 @@ class Character extends MovableObject {
 
     /**
      * Plays running or (slowed down) waiting on the ground.
-     * @param {Keyboard|object} k - Active input.
+     * @param {Keyboard|object} input - Active input.
      */
-    animateGround(k) {
-        if (k.is("LEFT") || k.is("RIGHT")) {
+    animateGround(input) {
+        if (input.is("LEFT") || input.is("RIGHT")) {
             this.idleTick = 0;
             this.playAnimation(this.IMAGES_RUN);
             return;

@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="de">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="img_small/favicon/favicon.ico">
+    <link rel="stylesheet" href="css/imprint.css">
+    <link rel="stylesheet" href="css/explanation.css">
+    <title>Spielerklärung - Road to 180</title>
+
+    <script src="js/storage.js"></script>
+    <script src="js/audio.js"></script>
+</head>
+
+<body onload="Sound.unlockOnFirstInput(); Sound.start('menuMusic')">
+    <a id="back-link" href="index.html"><img src="img_small/assets/buttons/back_button.webp" alt="Zurück"></a>
+
+    <main>
+        <h1>Spielerklärung</h1>
+
+        <h2>Ziel</h2>
+        <p>Laufe durch das Level bis zum Endboss und besiege ihn. Danach ist das nächste Level freigeschaltet.</p>
+
+        <h2>Steuerung</h2>
+        <table class="info-table">
+            <tr><th>Aktion</th><th>Tastatur</th><th>Touch</th></tr>
+            <tr><td>Laufen</td><td>A / D oder Pfeil links / rechts</td><td>Pfeil-Buttons links unten</td></tr>
+            <tr><td>Springen</td><td>W oder Pfeil hoch</td><td>Button Springen</td></tr>
+            <tr><td>Ducken</td><td>S oder Pfeil runter</td><td>Button Ducken</td></tr>
+            <tr><td>Dart werfen</td><td>Leertaste oder F</td><td>Button Werfen</td></tr>
+            <tr><td>Wurf aufladen</td><td>Shift oder Alt (einmal drücken)</td><td>Button Aufladen</td></tr>
+            <tr><td>Weiter / Neustart</td><td>Enter</td><td>Auf das Spielfeld tippen</td></tr>
+        </table>
+
+        <h2>Anzeigen</h2>
+        <table class="info-table">
+            <tr>
+                <td><img src="img_small/assets/bars/healthbar_player/healthbar_01.webp" alt="Leben"></td>
+                <td><strong>Leben:</strong> Du hast 5 Leben. Jeder Treffer kostet eins, danach bist du kurz
+                    unverwundbar. Bei 0 ist das Spiel verloren.</td>
+            </tr>
+            <tr>
+                <td><img src="img_small/assets/bars/dartbar/dartbar_06.webp" alt="Darts"></td>
+                <td><strong>Darts:</strong> Gesammelte Pfeile, höchstens 5. Normale Würfe verbrauchen keine. Bei vollem
+                    Vorrat kannst du den Wurf aufladen, die Leiste leuchtet dann.</td>
+            </tr>
+            <tr>
+                <td><img src="img_small/assets/bars/coin_counter.webp" alt="Münzen"></td>
+                <td><strong>Münzen:</strong> Anzahl der gesammelten Münzen.</td>
+            </tr>
+            <tr>
+                <td><img src="img_small/assets/bars/healthbar_level1/boss_healthbar_level1_01.webp" alt="Boss"></td>
+                <td><strong>Boss-Leben:</strong> Erscheint oben in der Mitte, sobald du den Endboss erreichst.</td>
+            </tr>
+        </table>
+
+        <h2>Einsammeln</h2>
+        <table class="info-table">
+            <tr>
+                <td><img class="item" src="img_small/items/coin.webp" alt="Münze"></td>
+                <td><strong>Münze:</strong> Zählt auf deinen Münzzähler.</td>
+            </tr>
+            <tr>
+                <td><img class="item" src="img_small/items/arrow.webp" alt="Dart"></td>
+                <td><strong>Dart:</strong> Füllt deinen Vorrat um 1 auf. Ist er voll (5), bleibt der Dart liegen.</td>
+            </tr>
+            <tr>
+                <td><img class="item" src="img_small/items/heeling-energydrink.webp" alt="Energydrink"></td>
+                <td><strong>Energydrink:</strong> Gibt ein Leben zurück. Hast du volles Leben, bleibt er liegen.</td>
+            </tr>
+        </table>
+
+        <h2>Gegner</h2>
+        <p>Dartscheiben rollen am Boden auf dich zu, fliegende Pfeile kommen in der Luft. Du besiegst sie mit einem
+            Dart oder indem du im Fallen von oben auf sie springst (du springst dabei wieder ab). Berührst du sie
+            anders, verlierst du ein Leben.</p>
+
+        <h2>Endboss</h2>
+        <p>Am Ende des Levels wartet ein Endboss und wirft Gegenstände nach dir. Treffe ihn mit Darts. Ein
+            aufgeladener Wurf verbraucht alle Darts und richtet doppelten Schaden an. Nach einem Treffer ist der Boss
+            kurz unverwundbar.</p>
+    </main>
+</body>
+
+</html>

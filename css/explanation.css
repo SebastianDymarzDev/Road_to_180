@@ -1,0 +1,26 @@
+.info-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.info-table th {
+    text-align: left;
+    color: #ffd23c;
+}
+
+.info-table td,
+.info-table th {
+    padding: 8px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+    vertical-align: middle;
+}
+
+.info-table td:first-child img {
+    display: block;
+    width: 110px;
+}
+
+.info-table td:first-child img.item {
+    width: 40px;
+    margin: 0 auto;
+}

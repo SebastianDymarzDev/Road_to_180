@@ -103,10 +103,10 @@ class Dartboard extends Enemy {
 
     /**
      * Returns the hit area.
-     * @returns {{x: number, y: number, w: number, h: number}} Rectangle in world coordinates.
+     * @returns {{x: number, y: number, width: number, height: number}} Rectangle in world coordinates.
      */
     getHitbox() {
-        return { x: this.x - 40, y: this.y - 90, w: 80, h: 86 };
+        return { x: this.x - 40, y: this.y - 90, width: 80, height: 86 };
     }
 
     /**
@@ -167,10 +167,10 @@ class FlyingArrow extends Enemy {
 
     /**
      * Returns the hit area.
-     * @returns {{x: number, y: number, w: number, h: number}} Rectangle in world coordinates.
+     * @returns {{x: number, y: number, width: number, height: number}} Rectangle in world coordinates.
      */
     getHitbox() {
-        return { x: this.x - 50, y: this.y - 13, w: 100, h: 26 };
+        return { x: this.x - 50, y: this.y - 13, width: 100, height: 26 };
     }
 
     /**

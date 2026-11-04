@@ -2,6 +2,8 @@
  * Base class for all game objects with position, images and drawing on the canvas.
  */
 class MovableObject {
+    static CHARGE_GLOW = "#ffd23c";
+
     x = 0;
     y = 0;
     speedY = 0;
@@ -63,8 +65,6 @@ class MovableObject {
         this.currentImage++;
     }
 
-    static CHARGE_GLOW = "#ffd23c";
-
     /**
      * Turns on a glow effect for the following drawing commands.
      * @param {CanvasRenderingContext2D} ctx - Drawing surface.
@@ -105,15 +105,15 @@ class MovableObject {
      */
     draw(ctx, img = this.img) {
         if (!img || !img.complete) return;
-        let w = img.naturalWidth;
-        let h = img.naturalHeight;
+        let width = img.naturalWidth;
+        let height = img.naturalHeight;
         ctx.save();
         if (this.otherDirection) {
             ctx.translate(this.x, 0);
             ctx.scale(-1, 1);
-            ctx.drawImage(img, -w / 2, this.y - h);
+            ctx.drawImage(img, -width / 2, this.y - height);
         } else {
-            ctx.drawImage(img, this.x - w / 2, this.y - h);
+            ctx.drawImage(img, this.x - width / 2, this.y - height);
         }
         ctx.restore();
     }
@@ -126,13 +126,13 @@ class MovableObject {
      */
     drawCentered(ctx, img, { angle = 0, scale = 1, flip = false } = {}) {
         if (!img || !img.complete) return;
-        let w = img.naturalWidth * scale;
-        let h = img.naturalHeight * scale;
+        let width = img.naturalWidth * scale;
+        let height = img.naturalHeight * scale;
         ctx.save();
         ctx.translate(this.x, this.y);
         if (flip) ctx.scale(-1, 1);
         ctx.rotate(angle);
-        ctx.drawImage(img, -w / 2, -h / 2, w, h);
+        ctx.drawImage(img, -width / 2, -height / 2, width, height);
         ctx.restore();
     }
 }

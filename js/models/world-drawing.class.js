@@ -23,11 +23,11 @@ class WorldDrawing {
     drawLayer(layer) {
         let offset = this.cameraX * layer.speed;
         let first = Math.floor(offset / 720);
-        for (let n = first; n <= first + 1; n++) {
-            let img = layer.imgs[n % layer.imgs.length];
+        for (let index = first; index <= first + 1; index++) {
+            let img = layer.imgs[index % layer.imgs.length];
             if (!img.complete) continue;
-            let x = Math.round(n * 720 - offset);
-            this.ctx.drawImage(img, x, layer.y + (layer.dys[n % layer.imgs.length] || 0), 720, 480);
+            let x = Math.round(index * 720 - offset);
+            this.ctx.drawImage(img, x, layer.y + (layer.dys[index % layer.imgs.length] || 0), 720, 480);
         }
     }
 
@@ -59,8 +59,8 @@ class WorldDrawing {
         this.drawVisible(this.enemies, 150, 870);
         this.drawVisible([this.boss], 150, 870);
         this.character.draw(ctx);
-        this.darts.forEach((d) => d.draw(ctx));
-        this.projectiles.forEach((m) => m.draw(ctx));
+        this.darts.forEach((dart) => dart.draw(ctx));
+        this.projectiles.forEach((projectile) => projectile.draw(ctx));
         ctx.restore();
     }
 
@@ -71,8 +71,8 @@ class WorldDrawing {
      * @param {number} right - Margin to the right of the view (measured from the left edge).
      */
     drawVisible(list, left, right) {
-        list.forEach((o) => {
-            if (o.x > this.cameraX - left && o.x < this.cameraX + right) o.draw(this.ctx);
+        list.forEach((object) => {
+            if (object.x > this.cameraX - left && object.x < this.cameraX + right) object.draw(this.ctx);
         });
     }
 
@@ -80,13 +80,13 @@ class WorldDrawing {
      * Fades the level logo in and out, large in the center, at the start of the level.
      */
     drawLevelLogo() {
-        let t = Date.now() - this.startTime;
-        if (t > this.LOGO_TIME || !this.logoImg.complete) return;
-        let w = 480;
-        let h = (w * this.logoImg.naturalHeight) / this.logoImg.naturalWidth;
+        let elapsed = Date.now() - this.startTime;
+        if (elapsed > this.LOGO_TIME || !this.logoImg.complete) return;
+        let width = 480;
+        let height = (width * this.logoImg.naturalHeight) / this.logoImg.naturalWidth;
         this.ctx.save();
-        this.ctx.globalAlpha = Math.min(1, t / 500, (this.LOGO_TIME - t) / 500);
-        this.ctx.drawImage(this.logoImg, (this.canvas.width - w) / 2, 90, w, h);
+        this.ctx.globalAlpha = Math.min(1, elapsed / 500, (this.LOGO_TIME - elapsed) / 500);
+        this.ctx.drawImage(this.logoImg, (this.canvas.width - width) / 2, 90, width, height);
         this.ctx.restore();
     }
 
@@ -95,34 +95,34 @@ class WorldDrawing {
      */
     drawIntro() {
         if (!this.arenaActive || !this.nameImg.complete) return;
-        let t = Date.now() - this.introStart;
-        let k = Math.min(1, Math.max(0, (t - this.INTRO_TIME) / this.NAME_FLY_TIME));
-        k = k * k * (3 - 2 * k);
-        let a = this.nameStart();
-        let b = this.nameEnd();
-        let mix = (from, to) => from + (to - from) * k;
+        let elapsed = Date.now() - this.introStart;
+        let progress = Math.min(1, Math.max(0, (elapsed - this.INTRO_TIME) / this.NAME_FLY_TIME));
+        progress = progress * progress * (3 - 2 * progress);
+        let start = this.nameStart();
+        let end = this.nameEnd();
+        let mix = (from, to) => from + (to - from) * progress;
         this.ctx.save();
-        this.ctx.globalAlpha = Math.min(1, t / 300);
-        this.ctx.drawImage(this.nameImg, mix(a.x, b.x), mix(a.y, b.y), mix(a.w, b.w), mix(a.h, b.h));
+        this.ctx.globalAlpha = Math.min(1, elapsed / 300);
+        this.ctx.drawImage(this.nameImg, mix(start.x, end.x), mix(start.y, end.y), mix(start.width, end.width), mix(start.height, end.height));
         this.ctx.restore();
     }
 
     /**
      * Returns position and size of the boss name in the center.
-     * @returns {{x: number, y: number, w: number, h: number}} Rectangle on the game field.
+     * @returns {{x: number, y: number, width: number, height: number}} Rectangle on the game field.
      */
     nameStart() {
-        let w = 320;
-        return { x: (this.canvas.width - w) / 2, y: 150, w: w, h: (w * this.nameImg.naturalHeight) / this.nameImg.naturalWidth };
+        let width = 320;
+        return { x: (this.canvas.width - width) / 2, y: 150, width, height: (width * this.nameImg.naturalHeight) / this.nameImg.naturalWidth };
     }
 
     /**
      * Returns position and size of the boss name at the top right.
-     * @returns {{x: number, y: number, w: number, h: number}} Rectangle on the game field.
+     * @returns {{x: number, y: number, width: number, height: number}} Rectangle on the game field.
      */
     nameEnd() {
-        let w = this.nameImg.naturalWidth * this.NAME_SCALE;
-        return { x: this.canvas.width - w - 6, y: Hud.Y, w: w, h: this.nameImg.naturalHeight * this.NAME_SCALE };
+        let width = this.nameImg.naturalWidth * this.NAME_SCALE;
+        return { x: this.canvas.width - width - 6, y: Hud.Y, width, height: this.nameImg.naturalHeight * this.NAME_SCALE };
     }
 
     /**
@@ -158,12 +158,12 @@ class WorldDrawing {
      */
     drawOverlay(img, since, text) {
         let ctx = this.ctx;
-        let w = 440;
+        let width = 440;
         ctx.save();
         ctx.globalAlpha = Math.min(1, since / 500);
         ctx.fillStyle = "rgba(0, 0, 0, 0.45)";
         ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
-        ctx.drawImage(img, (this.canvas.width - w) / 2, 70, w, (w * img.naturalHeight) / img.naturalWidth);
+        ctx.drawImage(img, (this.canvas.width - width) / 2, 70, width, (width * img.naturalHeight) / img.naturalWidth);
         this.drawOverlayText(text);
         ctx.restore();
     }

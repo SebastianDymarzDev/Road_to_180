@@ -30,7 +30,7 @@ class WorldCollisions extends WorldDrawing {
     /**
      * Handles a dart hitting an enemy.
      * @param {Dart} dart - The dart.
-     * @param {{x: number, y: number, w: number, h: number}} box - Hit area of the dart.
+     * @param {{x: number, y: number, width: number, height: number}} box - Hit area of the dart.
      * @param {Enemy} enemy - The enemy.
      */
     dartHitsEnemy(dart, box, enemy) {
@@ -43,7 +43,7 @@ class WorldCollisions extends WorldDrawing {
     /**
      * Handles a dart hitting the boss (not while it is invulnerable; the dart then passes through).
      * @param {Dart} dart - The dart.
-     * @param {{x: number, y: number, w: number, h: number}} box - Hit area of the dart.
+     * @param {{x: number, y: number, width: number, height: number}} box - Hit area of the dart.
      */
     dartHitsBoss(dart, box) {
         if (!this.boss.active || this.boss.dead || this.boss.isInvulnerable()) return;
@@ -67,29 +67,29 @@ class WorldCollisions extends WorldDrawing {
     /**
      * Handles the contact: from above the character defeats the enemy and hops, otherwise it takes damage.
      * @param {Enemy} enemy - The touched enemy.
-     * @param {{x: number, y: number, w: number, h: number}} box - Hit area of the character.
+     * @param {{x: number, y: number, width: number, height: number}} box - Hit area of the character.
      */
     contact(enemy, box) {
-        let c = this.character;
-        let feet = box.y + box.h;
-        let falling = c.speedY < 0;
+        let character = this.character;
+        let feet = box.y + box.height;
+        let falling = character.speedY < 0;
         if (falling && feet <= enemy.getHitbox().y + 30) {
             enemy.die("top");
             Sound.play("stomp");
-            c.bounce();
-        } else if (c.takeDamage()) {
+            character.bounce();
+        } else if (character.takeDamage()) {
             Sound.play("hitHuman");
         }
     }
 
     /**
      * Checks whether two rectangles overlap.
-     * @param {{x: number, y: number, w: number, h: number}} a - First rectangle.
-     * @param {{x: number, y: number, w: number, h: number}} b - Second rectangle.
+     * @param {{x: number, y: number, width: number, height: number}} boxA - First rectangle.
+     * @param {{x: number, y: number, width: number, height: number}} boxB - Second rectangle.
      * @returns {boolean} true if they overlap.
      */
-    overlaps(a, b) {
-        return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
+    overlaps(boxA, boxB) {
+        return boxA.x < boxB.x + boxB.width && boxA.x + boxA.width > boxB.x && boxA.y < boxB.y + boxB.height && boxA.y + boxA.height > boxB.y;
     }
 
     /**
@@ -109,10 +109,10 @@ class WorldCollisions extends WorldDrawing {
      * @returns {boolean} true if the item was collected.
      */
     collect(type) {
-        let c = this.character;
-        if (type === "coin") { c.coins++; Sound.play("coin"); return true; }
-        if (type === "dart" && c.darts < c.maxDarts) { c.darts++; Sound.play("arrow"); return true; }
-        if (type === "drink" && c.health < c.maxHealth) { c.health++; Sound.play("energy"); return true; }
+        let character = this.character;
+        if (type === "coin") { character.coins++; Sound.play("coin"); return true; }
+        if (type === "dart" && character.darts < character.maxDarts) { character.darts++; Sound.play("arrow"); return true; }
+        if (type === "drink" && character.health < character.maxHealth) { character.health++; Sound.play("energy"); return true; }
         return false;
     }
 }

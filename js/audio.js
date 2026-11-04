@@ -71,11 +71,11 @@ class Sound {
      */
     static audio(name) {
         if (!Sound.audios[name]) {
-            let s = SOUNDS[name];
-            let a = new Audio("audio/" + s.file);
-            a.volume = Sound.volumeOf(name);
-            a.loop = !!s.loop;
-            Sound.audios[name] = a;
+            let config = SOUNDS[name];
+            let element = new Audio("audio/" + config.file);
+            element.volume = Sound.volumeOf(name);
+            element.loop = !!config.loop;
+            Sound.audios[name] = element;
         }
         return Sound.audios[name];
     }
@@ -93,9 +93,9 @@ class Sound {
      * @returns {HTMLAudioElement} Copy with the matching volume.
      */
     static clone(name) {
-        let a = Sound.audio(name).cloneNode();
-        a.volume = Sound.volumeOf(name);
-        return a;
+        let copy = Sound.audio(name).cloneNode();
+        copy.volume = Sound.volumeOf(name);
+        return copy;
     }
 
     /**
@@ -114,10 +114,10 @@ class Sound {
      */
     static playThen(name, callback) {
         if (Sound.muted) return callback();
-        let a = Sound.clone(name);
-        a.addEventListener("ended", callback, { once: true });
-        a.addEventListener("error", callback, { once: true });
-        a.play().catch(callback);
+        let copy = Sound.clone(name);
+        copy.addEventListener("ended", callback, { once: true });
+        copy.addEventListener("error", callback, { once: true });
+        copy.play().catch(callback);
     }
 
     /**
@@ -136,8 +136,8 @@ class Sound {
     static stop(name) {
         Sound.wanted.delete(name);
         Sound.refresh();
-        let a = Sound.audio(name);
-        if (name.endsWith("Music")) a.currentTime = 0;
+        let element = Sound.audio(name);
+        if (name.endsWith("Music")) element.currentTime = 0;
     }
 
     /**
@@ -146,10 +146,10 @@ class Sound {
     static refresh() {
         Object.keys(SOUNDS).forEach((name) => {
             if (!SOUNDS[name].loop) return;
-            let a = Sound.audio(name);
+            let element = Sound.audio(name);
             let should = Sound.wanted.has(name) && !Sound.muted;
-            if (should && a.paused) a.play().catch(() => {});
-            else if (!should && !a.paused) a.pause();
+            if (should && element.paused) element.play().catch(() => {});
+            else if (!should && !element.paused) element.pause();
         });
     }
 

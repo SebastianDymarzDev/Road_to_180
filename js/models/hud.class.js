@@ -62,15 +62,15 @@ class Hud extends MovableObject {
      * @param {CanvasRenderingContext2D} ctx - Drawing surface.
      */
     draw(ctx) {
-        let c = this.character;
-        let s = Hud.SCALE;
-        let dartY = Hud.Y + 83 * s + Hud.GAP;
-        let coinY = dartY + 82 * s + Hud.GAP;
-        this.drawImage(ctx, this.IMAGES_HEALTH[c.maxHealth - c.health], Hud.X, Hud.Y);
+        let character = this.character;
+        let scale = Hud.SCALE;
+        let dartY = Hud.Y + 83 * scale + Hud.GAP;
+        let coinY = dartY + 82 * scale + Hud.GAP;
+        this.drawImage(ctx, this.IMAGES_HEALTH[character.maxHealth - character.health], Hud.X, Hud.Y);
         this.drawDartBar(ctx, dartY);
         this.drawImage(ctx, this.COIN_FRAME, Hud.X, coinY);
         this.drawBossBar(ctx);
-        this.drawCoins(ctx, c.coins, Hud.X + 106 * s, coinY + 44 * s);
+        this.drawCoins(ctx, character.coins, Hud.X + 106 * scale, coinY + 44 * scale);
     }
 
     /**
@@ -90,11 +90,22 @@ class Hud extends MovableObject {
      * @param {CanvasRenderingContext2D} ctx - Drawing surface.
      */
     drawBossBar(ctx) {
-        if (!this.boss || !this.bossBarVisible || !this.IMAGES_BOSS) return;
-        let bs = Hud.BOSS_SCALE;
-        let x = (720 - 360 * bs) / 2;
-        this.drawImage(ctx, this.IMAGES_BOSS[this.boss.maxHealth - this.boss.health], x, Hud.Y, bs);
-    }
+    if (!this.boss || !this.bossBarVisible || !this.IMAGES_BOSS) return;
+    let bossScale = Hud.BOSS_SCALE;
+    let x = (720 - 360 * bossScale) / 2;
+    this.drawImage(ctx, this.IMAGES_BOSS[this.bossBarFrame()], x, Hud.Y, bossScale);
+}
+
+/**
+ * Picks the boss bar image from the share of lost health, so any health value fits the available images.
+ * @returns {number} Index of the image in IMAGES_BOSS.
+ */
+bossBarFrame() {
+    let last = this.IMAGES_BOSS.length - 1;
+    let lost = (this.boss.maxHealth - this.boss.health) / this.boss.maxHealth;
+    let frame = Math.round(lost * last);
+    return this.boss.health > 0 ? Math.min(frame, last - 1) : last;
+}
 
     /**
      * Draws the number of coins centered at the position.
@@ -109,8 +120,8 @@ class Hud extends MovableObject {
         ctx.fillStyle = "#ffd23c";
         ctx.textAlign = "center";
         ctx.textBaseline = "alphabetic";
-        let m = ctx.measureText(String(coins));
-        let offset = (m.actualBoundingBoxAscent - m.actualBoundingBoxDescent) / 2;
+        let metrics = ctx.measureText(String(coins));
+        let offset = (metrics.actualBoundingBoxAscent - metrics.actualBoundingBoxDescent) / 2;
         ctx.fillText(coins, x, y + offset);
         ctx.restore();
     }
